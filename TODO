@@ -1,0 +1,4 @@
+The first thing to do is to replace those functions from 
+"Numerical Recipies" as they are not compatible with GPL 
+or any other OSS license. To be replaced with 
+GNU Scientific Library or something similar.
