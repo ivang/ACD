@@ -1,0 +1,1051 @@
+diff -rp ACD_nr/acdinit.cc ACD_gsl/acdinit.cc
+*** ACD_nr/acdinit.cc	2006-01-25 12:07:58.000000000 +0100
+--- ACD_gsl/acdinit.cc	2010-07-11 23:10:03.000000000 +0200
+***************
+*** 19,24 ****
+--- 19,26 ----
+  #include <string>
+  #include <algorithm>
+  
++ #include "gsl/gsl_multimin.h"
++ 
+  extern "C"
+  {
+  #include "numrec.h"
+*************** WARNING: The parameter 'PARAMETRISATION 
+*** 687,700 ****
+  
+  //-------------------------------------------------------------------------
+  
+! float funk1(float* arguments)
+  {
+      int i;
+      if (optimised_coating && global_parameter_converter &&
+  	global_target && global_optimisation_parameters)
+      {
+  	for (i=0; i< global_n_parameters; i++)
+! 	    global_optimisation_parameters[i] = arguments[i+1];
+  	global_parameter_converter->
+  	    UpdateCoating(global_n_parameters,
+  			  global_optimisation_parameters,
+--- 689,702 ----
+  
+  //-------------------------------------------------------------------------
+  
+! double funk1(const gsl_vector *arguments, void *params)
+  {
+      int i;
+      if (optimised_coating && global_parameter_converter &&
+  	global_target && global_optimisation_parameters)
+      {
+  	for (i=0; i< global_n_parameters; i++)
+! 	    global_optimisation_parameters[i] = gsl_vector_get(arguments,i);
+  	global_parameter_converter->
+  	    UpdateCoating(global_n_parameters,
+  			  global_optimisation_parameters,
+*************** float funk1(float* arguments)
+*** 706,712 ****
+  }
+  
+  
+! void dfunk(float* arguments, float* gradient)
+  {
+      int i, n;
+      Real original_value, v1, v2;
+--- 708,714 ----
+  }
+  
+  
+! void dfunk(const gsl_vector *arguments, void *params, gsl_vector *gradient)
+  {
+      int i, n;
+      Real original_value, v1, v2;
+*************** void dfunk(float* arguments, float* grad
+*** 715,721 ****
+      {
+  	n = optimised_coating->NumberOfVariableLayers();
+  	for (i=0; i< global_n_parameters; i++)
+! 	    global_optimisation_parameters[i] = arguments[i+1];
+  	for (i=0; i< global_n_parameters; i++)
+  	{
+  	    // calculate the gradient with respect to the i-th parameter
+--- 717,723 ----
+      {
+  	n = optimised_coating->NumberOfVariableLayers();
+  	for (i=0; i< global_n_parameters; i++)
+! 	    global_optimisation_parameters[i] = gsl_vector_get(arguments, i);
+  	for (i=0; i< global_n_parameters; i++)
+  	{
+  	    // calculate the gradient with respect to the i-th parameter
+*************** void dfunk(float* arguments, float* grad
+*** 734,745 ****
+  			      *optimised_coating);
+  	    v2 = global_target->MeritFunction(*optimised_coating);
+  	    global_optimisation_parameters[i] = original_value;
+! 	    gradient[i+1] = (v2 - v1) / (2.0*global_gradient_step);
+  	}
+      }
+      else throw "ERROR in 'dfunk'";
+  }
+  
+  //-------------------------------------------------------------------------
+  
+  
+--- 736,753 ----
+  			      *optimised_coating);
+  	    v2 = global_target->MeritFunction(*optimised_coating);
+  	    global_optimisation_parameters[i] = original_value;
+! 	    gsl_vector_set(gradient, i, (v2 - v1) / (2.0*global_gradient_step));
+  	}
+      }
+      else throw "ERROR in 'dfunk'";
+  }
+  
++ void fdfunk(const gsl_vector *arguments, void *params, double *f, gsl_vector *gradient)
++ {
++     *f = funk1(arguments, params);
++     dfunk(arguments, params, gradient);
++ }
++ 
+  //-------------------------------------------------------------------------
+  
+  
+*************** void ParametricCGoptimisation(int n, Rea
+*** 748,757 ****
+  			      Coating& coating, AbstractTarget& target,
+  			      Real step)
+  {
+      int i;
+      const float ftol = 1e-4; // the fractional tolerance
+      float* p; // the coordinates of a point in n-dimensional space
+!     int iter; // the number of iterations that were performed
+      float fret; // the minimum value of the function
+      if (n<=0) return;
+  
+--- 756,776 ----
+  			      Coating& coating, AbstractTarget& target,
+  			      Real step)
+  {
++     const int params = NULL;    // GSL requires such parameters. Not needed
++    				// in our program, though.
++ 
++     const gsl_multimin_fdfminimizer_type *T; 
++     gsl_multimin_fdfminimizer *gradient_minimizer = NULL;
++     gsl_vector *x;
++     gsl_multimin_function_fdf merit_min;
++ 
++     int status;
+      int i;
+      const float ftol = 1e-4; // the fractional tolerance
++ 
+      float* p; // the coordinates of a point in n-dimensional space
+!     size_t iter = 0; // the number of iterations that were performed
+! 
+      float fret; // the minimum value of the function
+      if (n<=0) return;
+  
+*************** void ParametricCGoptimisation(int n, Rea
+*** 765,775 ****
+  
+      // initialise the starting point
+      p = new float[n+1];
+!     for (i=0; i<n; i++) p[i+1] = parameters[i];
+      // optimise
+!     frprmn(p, n, ftol, &iter, &fret, &funk1, &dfunk);
+!     fret = funk1(p); // to ensure that 'coating' is updated
+!     for (i=0; i<n; i++) parameters[i] = p[i+1];
+      // clean up
+      delete[] p;
+      delete[] global_optimisation_parameters;
+--- 784,825 ----
+  
+      // initialise the starting point
+      p = new float[n+1];
+! 
+!     merit_min.n = n;
+!     merit_min.f = funk1;
+!     merit_min.df = dfunk;
+!     merit_min.fdf = fdfunk;
+!     merit_min.params = params;
+! 
+!     x = gsl_vector_alloc(n);
+!     for (i=0; i<n; i++) gsl_vector_set(x, i, parameters[i]);
+! 
+!     T = gsl_multimin_fdfminimizer_conjugate_fr;
+!     gradient_minimizer = gsl_multimin_fdfminimizer_alloc(T, n);
+! 
+      // optimise
+!     gsl_multimin_fdfminimizer_set(gradient_minimizer, &merit_min, x, step, ftol);
+!     
+!     do {
+! 	iter++;
+! 	status = gsl_multimin_fdfminimizer_iterate(gradient_minimizer);
+! 	
+! 	if (status)
+! 	    break;
+! 	
+! 	status = gsl_multimin_test_gradient(gradient_minimizer->gradient, ftol);
+! 	
+! 	/*if (status == GSL_SUCCESS)
+! 	{
+! 	    printf ("Minimum found.\n");
+! 	}*/
+!     } while (status == GSL_CONTINUE && iter < 10000);
+!    
+!     for (i=0; i<n; i++)
+! 	parameters[i] = gsl_vector_get(gradient_minimizer->x, i);
+!     
+!     fret = funk1(gradient_minimizer->x, params); // to ensure that 'coating' is updated
+!     
+      // clean up
+      delete[] p;
+      delete[] global_optimisation_parameters;
+*************** void ParametricSimplexOptimisation(int n
+*** 787,798 ****
+  				   Coating& coating, AbstractTarget& target,
+  				   Real step)
+  {
+      const float ftol = 1e-4; // the fractional tolerance
+!     float** p; // matrix (n+1)xn, vertices of the simplex
+!     float* y; // merit function values in the vertices of the simplex
+!     int i, j;
+!     int nfunk; // number of the merit function evaluations
+!     float result;
+      if (n<=0) return;
+  
+      // initialise the global variables
+--- 837,859 ----
+  				   Coating& coating, AbstractTarget& target,
+  				   Real step)
+  {
++     const int params = NULL;    // GSL requires such parameters. Not needed
++    				// in our program, though.
++ 
++     const gsl_multimin_fminimizer_type *T = 
++ 	gsl_multimin_fminimizer_nmsimplex2;
++     gsl_multimin_fminimizer *simplex = NULL;
++     gsl_vector *steps, *x;
++     gsl_multimin_function merit_min;
++ 
++     size_t iter = 0;
++     int status;
++     double size;
++ 
+      const float ftol = 1e-4; // the fractional tolerance
+!     float fret;
+!     float* p; 
+!     int i;
+      if (n<=0) return;
+  
+      // initialise the global variables
+*************** void ParametricSimplexOptimisation(int n
+*** 802,848 ****
+      global_n_parameters = n;
+      global_optimisation_parameters = new Real[n];
+  
+!     p = new float* [n+2];
+!     y = new float [n+2];
+!     p[0] = NULL;
+!     for (i=1; i<=n+1; i++) p[i] = new float[n+1];
+  
+      // initialise the simplex
+!     for (i=0; i<n; i++) p[1][i+1] = parameters[i];
+!     y[1] = target.MeritFunction(coating);
+!     for (i=2; i<=n+1; i++)
+!     {
+! 	for (j=1; j<=n; j++)
+! 	{
+! 	    if (j != i-1) p[i][j] = p[1][j];
+! 	    else p[i][j] = p[1][j] + step;
+! 	    global_optimisation_parameters[j-1] = p[i][j];
+! 	}
+! 	converter.UpdateCoating(n, global_optimisation_parameters, coating);
+! 	y[i] = target.MeritFunction(coating);
+!     }
+! 	
+!     // optimisation itself
+!     amoeba(p, y, n, ftol, &funk1, &nfunk);
+  
+!     // find the best vertex
+!     j = 1;
+!     result = y[1];
+!     for (i=2; i<=n+1; i++)
+!     {
+! 	if (y[i] < result)
+  	{
+! 	    result = y[i];
+! 	    j = i;
+! 	}
+!     }
+!     for (i=0; i<n; i++) parameters[i] = p[j][i+1];
+!     funk1(p[j]); // make sure that 'coating' is updated
+  
+-     for (i=1; i<=n+1; i++) delete[] p[i];
+      // clean up
+      delete[] p;
+-     delete[] y;
+      delete[] global_optimisation_parameters;
+      global_target = NULL;
+      optimised_coating = NULL;
+--- 863,907 ----
+      global_n_parameters = n;
+      global_optimisation_parameters = new Real[n];
+  
+!     p = new float[n];
+  
+      // initialise the simplex
+!     x = gsl_vector_alloc(n);
+!     for (i=0; i<n; i++) gsl_vector_set(x, i, parameters[i]);
+  
+!     steps = gsl_vector_alloc(n);
+!     gsl_vector_set_all(steps, step);
+! 
+!     merit_min.n = n;
+!     merit_min.f = funk1;
+!     merit_min.params = params;
+! 
+!     simplex = gsl_multimin_fminimizer_alloc(T, n);
+!     gsl_multimin_fminimizer_set(simplex, &merit_min, x, steps);
+! 
+!     do {
+! 	iter++;
+! 	status = gsl_multimin_fminimizer_iterate(simplex);
+! 
+! 	if (status) break;
+! 
+! 	size = gsl_multimin_fminimizer_size(simplex);
+! 	status = gsl_multimin_test_size(size, ftol);
+! 	
+! 	/*if (status == GSL_SUCCESS)
+  	{
+! 	    printf("Converged to minumum.\n");
+! 	}*/
+! 
+!     } while (status == GSL_CONTINUE && iter < 1000);
+!     
+!     for (i=0; i<n; i++)
+! 	parameters[i] = gsl_vector_get(simplex->x, i);
+!     
+!     fret = funk1(simplex->x, params); // to ensure that 'coating' is updated
+  
+      // clean up
+      delete[] p;
+      delete[] global_optimisation_parameters;
+      global_target = NULL;
+      optimised_coating = NULL;
+diff -rp ACD_nr/local.cc ACD_gsl/local.cc
+*** ACD_nr/local.cc	2005-02-10 21:09:34.000000000 +0100
+--- ACD_gsl/local.cc	2010-07-11 23:08:16.000000000 +0200
+***************
+*** 1,4 ****
+--- 1,5 ----
+  #include "local.hh"
++ #include "gsl/gsl_multimin.h"
+  
+  extern "C"
+  {
+*************** vector<Coating>* optimised_set_of_coatin
+*** 17,23 ****
+  // the following functions are necessary for the external
+  // optimisation functions
+  
+! void UpdateOptimisedCoatings(float* optimisation_parameters)
+  { // calls 'SetVariableThicknesses' for each of the coatings
+      int i, j, k, n, N;
+      Coating* c;
+--- 18,24 ----
+  // the following functions are necessary for the external
+  // optimisation functions
+  
+! void UpdateOptimisedCoatings(double* optimisation_parameters)
+  { // calls 'SetVariableThicknesses' for each of the coatings
+      int i, j, k, n, N;
+      Coating* c;
+*************** void UpdateOptimisedCoatings(float* opti
+*** 37,56 ****
+  }
+  
+  
+! float funk1(float* arguments)
+  {
+      if (optimised_coating)
+      { // we assume that a single mirror is being optimised
+  	int n = optimised_coating->NumberOfVariableLayers();
+  	Real* thicknesses = new Real[n];
+! 	for (int i=0; i<n; i++) thicknesses[i] = abs(arguments[i+1]);
+  	optimised_coating->SetVariableThicknesses(thicknesses);
+  	delete[] thicknesses;
+  	return global_target->MeritFunction(*optimised_coating);
+      }
+      else if (optimised_set_of_coatings)
+      { // simultaneous optimisation of a set of complementary mirrors
+! 	UpdateOptimisedCoatings(&arguments[1]);
+          return global_target->MeritFunction(*optimised_set_of_coatings);
+      }
+      else throw "ERROR in 'funk1'";
+--- 38,63 ----
+  }
+  
+  
+! double funk1(const gsl_vector *arguments, void *params)
+  {
++ 
+      if (optimised_coating)
+      { // we assume that a single mirror is being optimised
+  	int n = optimised_coating->NumberOfVariableLayers();
+  	Real* thicknesses = new Real[n];
+! 	for (int i=0; i<n; i++) thicknesses[i] = abs(gsl_vector_get(arguments, i));
+  	optimised_coating->SetVariableThicknesses(thicknesses);
+  	delete[] thicknesses;
+  	return global_target->MeritFunction(*optimised_coating);
+      }
+      else if (optimised_set_of_coatings)
+      { // simultaneous optimisation of a set of complementary mirrors
+! 	int i, number_of_coatings = optimised_set_of_coatings->size();
+!     	double args[number_of_coatings];
+! 
+! 	for (i=0; i<number_of_coatings; i++) args[i] = gsl_vector_get(arguments, i);
+! 
+! 	UpdateOptimisedCoatings(&args[1]);
+          return global_target->MeritFunction(*optimised_set_of_coatings);
+      }
+      else throw "ERROR in 'funk1'";
+*************** float funk1(float* arguments)
+*** 58,64 ****
+  }
+  
+  
+! void dfunk(float* arguments, float* gradient)
+  {
+      int i;
+      int n;
+--- 65,71 ----
+  }
+  
+  
+! void dfunk(const gsl_vector *arguments, void *params, gsl_vector *gradient)
+  {
+      int i;
+      int n;
+*************** void dfunk(float* arguments, float* grad
+*** 67,115 ****
+      { // we assume that a single mirror is being optimised
+  	n = optimised_coating->NumberOfVariableLayers();
+  	real_array = new Real[n];
+! 	for (i=0; i<n; i++) real_array[i] = abs(arguments[i+1]);
+  	optimised_coating->SetVariableThicknesses(real_array);
+  	global_target->MeritGradient(*optimised_coating, real_array);
+      }
+      else if (optimised_set_of_coatings)
+      { // simultaneous optimisation of a set of complementary mirrors
+  	int number_of_coatings = optimised_set_of_coatings->size();
+  	n = 0;
+! 	for (i=0; i<number_of_coatings; i++)
+  	    n += (*optimised_set_of_coatings)[i].NumberOfVariableLayers();
+  	real_array = new Real[n];
+! 	UpdateOptimisedCoatings(&arguments[1]);
+          global_target->MeritGradient(*optimised_set_of_coatings, real_array);
+      }
+      else throw "ERROR in 'dfunk'";
+!     for (i=0; i<n; i++) gradient[i+1] = real_array[i];
+      delete[] real_array;
+  }
+  
+  //-------------------------------------------------------------------------
+  
+  void ConjugateGradientOptimisation(Coating& coating,
+  				   AbstractTarget& target)
+  {
+      int i, N;
+      const float ftol = 1e-8; // the fractional tolerance
+!     float* p; // the coordinates of a point in N-dimensional space
+!     int iter; // the number of iterations that were performed
+!     float fret; // the minimum value of the function
+      N = coating.NumberOfVariableLayers();
+      if (N<=0) return;
+      global_target = &target;
+      optimised_coating = &coating;
+      // initialise the starting point
+      Real* thicknesses = new Real[N];
+      coating.GetVariableThicknesses(thicknesses);
+!     p = new float[N+1];
+!     for (i=0; i<N; i++) p[i+1] = thicknesses[i];
+!     // optimise
+!     frprmn(p, N, ftol, &iter, &fret, &funk1, &dfunk);
+!     for (i=0; i<N; i++) thicknesses[i] = abs(p[i+1]);
+      coating.SetVariableThicknesses(thicknesses);
+!     delete[] p;
+      delete[] thicknesses;
+      global_target = NULL;
+      optimised_coating = NULL;
+--- 74,173 ----
+      { // we assume that a single mirror is being optimised
+  	n = optimised_coating->NumberOfVariableLayers();
+  	real_array = new Real[n];
+! 	for (i=0; i<n; i++) real_array[i] = abs(gsl_vector_get(arguments, i));
+  	optimised_coating->SetVariableThicknesses(real_array);
+  	global_target->MeritGradient(*optimised_coating, real_array);
+      }
+      else if (optimised_set_of_coatings)
+      { // simultaneous optimisation of a set of complementary mirrors
+  	int number_of_coatings = optimised_set_of_coatings->size();
++ 	double args[number_of_coatings];
++ 
+  	n = 0;
+! 	for (i=0; i<number_of_coatings; i++) {
+  	    n += (*optimised_set_of_coatings)[i].NumberOfVariableLayers();
++ 	    args[i] = gsl_vector_get(arguments, i);
++ 	}
+  	real_array = new Real[n];
+! 	UpdateOptimisedCoatings(&args[1]);
+          global_target->MeritGradient(*optimised_set_of_coatings, real_array);
+      }
+      else throw "ERROR in 'dfunk'";
+!     for (i=0; i<n; i++) gsl_vector_set(gradient, i, real_array[i]);
+      delete[] real_array;
+  }
+  
++ void fdfunk(const gsl_vector *arguments, void *params, double *f, gsl_vector *gradient)
++ {
++ 	*f = funk1(arguments, params);
++ 	dfunk(arguments, params, gradient);
++ }
++ 
+  //-------------------------------------------------------------------------
+  
+  void ConjugateGradientOptimisation(Coating& coating,
+  				   AbstractTarget& target)
+  {
++     const int params = NULL;    // GSL requires such parameters. Not needed
++    				// in our program, though.
++ 
++     const gsl_multimin_fdfminimizer_type *T; 
++     gsl_multimin_fdfminimizer *gradient_minimizer = NULL;
++     gsl_vector *x;
++     gsl_multimin_function_fdf merit_min;
++ 
++     int status;
+      int i, N;
+      const float ftol = 1e-8; // the fractional tolerance
+!     const float step = 0.01; // initial step size
+!     
+!     size_t iter = 0; // the number of iterations that were performed
+!     
+      N = coating.NumberOfVariableLayers();
+      if (N<=0) return;
++     
+      global_target = &target;
+      optimised_coating = &coating;
++ 
+      // initialise the starting point
+      Real* thicknesses = new Real[N];
+      coating.GetVariableThicknesses(thicknesses);
+! 
+!     merit_min.n = N;
+!     merit_min.f = funk1;
+!     merit_min.df = dfunk;
+!     merit_min.fdf = fdfunk;
+!     merit_min.params = params;
+! 
+!     x = gsl_vector_alloc(N);
+!     for (i=0; i<N; i++) gsl_vector_set(x, i, thicknesses[i]);
+!     
+!     T = gsl_multimin_fdfminimizer_conjugate_fr;
+!     gradient_minimizer = gsl_multimin_fdfminimizer_alloc(T, N);
+! 
+!     // Optimize
+!     gsl_multimin_fdfminimizer_set(gradient_minimizer, &merit_min, x, step, ftol);
+!     
+!     do {
+! 	iter++;
+! 	status = gsl_multimin_fdfminimizer_iterate(gradient_minimizer);
+! 	
+! 	if (status)
+! 	    break;
+! 	
+! 	status = gsl_multimin_test_gradient(gradient_minimizer->gradient, ftol);
+! 	
+! 	/*if (status == GSL_SUCCESS)
+! 	{
+! 	    printf ("Minimum found.\n");
+! 	}*/
+!     } while (status == GSL_CONTINUE && iter < 10000);
+! 
+!     // Set optimized thicknesses
+!     for (i=0; i<N; i++) 
+! 	thicknesses[i] = abs(gsl_vector_get(gradient_minimizer->x, i));
+      coating.SetVariableThicknesses(thicknesses);
+!     
+      delete[] thicknesses;
+      global_target = NULL;
+      optimised_coating = NULL;
+*************** void ConjugateGradientOptimisation(Coati
+*** 118,207 ****
+  void ConjugateGradientOptimisation(vector<Coating>& coatings,
+  				   AbstractTarget& target)
+  {
+!     int i, j, m, k, n, N;
+      const float ftol = 1e-8; // the fractional tolerance
+!     float* p; // the coordinates of a point in N-dimensional space
+!     int iter; // the number of iterations that were performed
+!     float fret; // the minimum value of the function
+      Real* thicknesses;
+      n = coatings.size();
+      for (i=0, N=0; i<n; i++) N += coatings[i].NumberOfVariableLayers();
+      if (N<=0) return;
+      global_target = &target;
+      optimised_set_of_coatings = &coatings;
+      // initialise the starting point
+!     p = new float[N+1];
+!     j = 1;
+      for (i=0; i<n; i++)
+      {
+  	m = coatings[i].NumberOfVariableLayers();
+  	thicknesses = new Real[m];
+  	coatings[i].GetVariableThicknesses(thicknesses);
+! 	for (k=0; k<m; k++) p[j++] = thicknesses[k];
+  	delete[] thicknesses;
+      }
+!     // optimise
+!     frprmn(p, N, ftol, &iter, &fret, &funk1, &dfunk);
+!     UpdateOptimisedCoatings(&p[1]);
+!     delete[] p;
+      global_target = NULL;
+!     optimised_set_of_coatings = NULL;
+  }
+  
+  //-------------------------------------------------------------------------
+  
+  void SimplexOptimisation(Coating& coating, AbstractTarget& target, Real step)
+  {
+      const float ftol = 1e-4; // the fractional tolerance
+-     float** p; // matrix (N+1)xN, vertices of the simplex
+-     float* y; // merit function values in the vertices of the simplex
+-     int i, j, N;
+-     int nfunk; // number of the merit function evaluations
+-     float result;
+      N = coating.NumberOfVariableLayers();
+      if (N<=0) return;
+      global_target = &target;
+      optimised_coating = &coating;
+!     p = new float* [N+2];
+!     y = new float [N+2];
+!     p[0] = NULL;
+!     for (i=1; i<=N+1; i++) p[i] = new float[N+1];
+! 
+!     // initialise the simplex
+      Real* thicknesses = new Real[N];
+      coating.GetVariableThicknesses(thicknesses);
+!     for (i=0; i<N; i++) p[1][i+1] = thicknesses[i];
+!     y[1] = target.MeritFunction(coating);
+!     for (i=2; i<=N+1; i++)
+!     {
+! 	for (j=1; j<=N; j++)
+! 	{
+! 	    if (j != i-1) p[i][j] = p[1][j];
+! 	    else p[i][j] = p[1][j] + step;
+! 	}
+! 	y[i] = target.MeritFunction(coating, i-2, p[i][i-1]);
+!     }
+  	
+!     // optimisation itself
+!     amoeba(p, y, N, ftol, &funk1, &nfunk);
+  
+!     // find the best vertex
+!     j = 1;
+!     result = y[1];
+!     for (i=2; i<=N+1; i++)
+!     {
+! 	if (y[i] < result)
+  	{
+! 	    result = y[i];
+! 	    j = i;
+! 	}
+!     }
+!     for (i=0; i<N; i++) thicknesses[i] = abs(p[j][i+1]);
+      coating.SetVariableThicknesses(thicknesses);
+  
+-     for (i=1; i<=N+1; i++) delete[] p[i];
+-     delete[] p;
+-     delete[] y;
+      delete[] thicknesses;
+      global_target = NULL;
+      optimised_coating = NULL;
+--- 176,318 ----
+  void ConjugateGradientOptimisation(vector<Coating>& coatings,
+  				   AbstractTarget& target)
+  {
+!     const int params = NULL;    // GSL requires such parameters. Not needed
+!    				// in our program, though.
+! 
+!     const gsl_multimin_fdfminimizer_type *T; 
+!     gsl_multimin_fdfminimizer *gradient_minimizer = NULL;
+!     gsl_vector *x;
+!     gsl_multimin_function_fdf merit_min;
+! 
+!     int status;
+!     int i, j, k, n, m, N;
+      const float ftol = 1e-8; // the fractional tolerance
+!     const float step = 0.01; // initial step size
+!     
+!     size_t iter = 0; // the number of iterations that were performed
+      Real* thicknesses;
+      n = coatings.size();
+      for (i=0, N=0; i<n; i++) N += coatings[i].NumberOfVariableLayers();
++     
+      if (N<=0) return;
++     
+      global_target = &target;
+      optimised_set_of_coatings = &coatings;
++ 
+      // initialise the starting point
+!     merit_min.n = N;
+!     merit_min.f = funk1;
+!     merit_min.df = dfunk;
+!     merit_min.fdf = fdfunk;
+!     merit_min.params = params;
+! 
+!     x = gsl_vector_alloc(N);
+!     j = 0;
+      for (i=0; i<n; i++)
+      {
+  	m = coatings[i].NumberOfVariableLayers();
+  	thicknesses = new Real[m];
+  	coatings[i].GetVariableThicknesses(thicknesses);
+! 	for (k=0; k<m; k++) gsl_vector_set(x, j++, thicknesses[k]);
+  	delete[] thicknesses;
+      }
+!     
+!     T = gsl_multimin_fdfminimizer_conjugate_fr;
+!     gradient_minimizer = gsl_multimin_fdfminimizer_alloc(T, N);
+! 
+!     // Optimize
+!     gsl_multimin_fdfminimizer_set(gradient_minimizer, &merit_min, x, step, ftol);
+!     
+!     do {
+! 	iter++;
+! 	status = gsl_multimin_fdfminimizer_iterate(gradient_minimizer);
+! 	
+! 	if (status)
+! 	    break;
+! 	
+! 	status = gsl_multimin_test_gradient(gradient_minimizer->gradient, ftol);
+! 	
+! 	/*if (status == GSL_SUCCESS)
+! 	{
+! 	    printf ("Minimum found.\n");
+! 	}*/
+!     } while (status == GSL_CONTINUE && iter < 10000);
+! 
+!     // Set optimized thicknesses
+!     for (i=0; i<N; i++) 
+! 	thicknesses[i] = abs(gsl_vector_get(gradient_minimizer->x, i));
+! 
+!     UpdateOptimisedCoatings(&thicknesses[1]);
+!     
+!     delete[] thicknesses;
+      global_target = NULL;
+!     optimised_coating = NULL;
+  }
+  
+  //-------------------------------------------------------------------------
+  
+  void SimplexOptimisation(Coating& coating, AbstractTarget& target, Real step)
+  {
++     const int params = NULL;    // GSL requires such parameters. Not needed
++    				// in our program, though.
++ 
++     const gsl_multimin_fminimizer_type *T = 
++ 	gsl_multimin_fminimizer_nmsimplex2;
++     gsl_multimin_fminimizer *simplex = NULL;
++     gsl_vector *steps, *x;
++     gsl_multimin_function merit_min;
++ 
++     size_t iter = 0;
++     int status;
++     double size;
++     int i, N;
++ 
+      const float ftol = 1e-4; // the fractional tolerance
+      N = coating.NumberOfVariableLayers();
+      if (N<=0) return;
++ 
+      global_target = &target;
+      optimised_coating = &coating;
+!     
+!     // Get the initial thicknesses 
+      Real* thicknesses = new Real[N];
+      coating.GetVariableThicknesses(thicknesses);
+! 
+!     // Starting point
+!     x = gsl_vector_alloc(N);
+!     for (i=0; i<N; i++) gsl_vector_set(x, i, thicknesses[i]); 
+! 
+!     steps = gsl_vector_alloc(N);
+!     gsl_vector_set_all(steps, step);
+  	
+!     // Initialize
+!     merit_min.n = N;
+!     merit_min.f = funk1;
+!     merit_min.params = params;
+! 
+!     simplex = gsl_multimin_fminimizer_alloc(T, N);
+!     gsl_multimin_fminimizer_set(simplex, &merit_min, x, steps);
+! 
+!     do {
+! 	iter++;
+! 	status = gsl_multimin_fminimizer_iterate(simplex);
+  
+! 	if (status) break;
+! 
+! 	size = gsl_multimin_fminimizer_size(simplex);
+! 	status = gsl_multimin_test_size(size, ftol);
+! 	
+! 	/*if (status == GSL_SUCCESS)
+  	{
+! 	    printf("Converged to minumum.\n");
+! 	}*/
+! 
+!     } while (status == GSL_CONTINUE && iter < 10000);
+! 
+!     for (i=0; i<N; i++) 
+! 	thicknesses[i] = abs(gsl_vector_get(simplex->x, i));
+      coating.SetVariableThicknesses(thicknesses);
+  
+      delete[] thicknesses;
+      global_target = NULL;
+      optimised_coating = NULL;
+*************** void SimplexOptimisation(Coating& coatin
+*** 209,274 ****
+  
+  
+  void SimplexOptimisation(vector<Coating>& coatings,
+! 			 AbstractTarget& target, Real step)
+  {
+!     const float ftol = 1e-4; // the fractional tolerance
+!     float** p; // matrix (N+1)xN, vertices of the simplex
+!     float* y; // merit function values in the vertices of the simplex
+      int i, j, k, m, n, N;
+!     int nfunk; // number of the merit function evaluations
+!     float result;
+!     Real* thicknesses;
+      n = coatings.size();
+      for (i=0, N=0; i<n; i++) N += coatings[i].NumberOfVariableLayers();
+      if (N<=0) return;
+      global_target = &target;
+      optimised_set_of_coatings = &coatings;
+!     p = new float* [N+2];
+!     y = new float [N+2];
+!     p[0] = NULL;
+!     for (i=1; i<=N+1; i++) p[i] = new float[N+1];
+  
+!     // initialise the simplex
+!     j = 1;
+      for (i=0; i<n; i++)
+      {
+  	m = coatings[i].NumberOfVariableLayers();
+  	thicknesses = new Real[m];
+  	coatings[i].GetVariableThicknesses(thicknesses);
+! 	for (k=0; k<m; k++) p[1][j++] = thicknesses[k];
+  	delete[] thicknesses;
+      }
+!     y[1] = target.MeritFunction(coatings);
+!     for (i=2; i<=N+1; i++)
+!     {
+! 	for (j=1; j<=N; j++)
+! 	{
+! 	    if (j != i-1) p[i][j] = p[1][j];
+! 	    else p[i][j] = p[1][j] + step;
+! 	}
+! 	UpdateOptimisedCoatings(&p[i][1]);
+! 	y[i] = target.MeritFunction(coatings);
+!     }
+! 	
+!     // optimisation itself
+!     amoeba(p, y, N, ftol, &funk1, &nfunk);
+  
+!     // find the best vertex
+!     j = 1;
+!     result = y[1];
+!     for (i=2; i<=N+1; i++)
+!     {
+! 	if (y[i] < result)
+  	{
+! 	    result = y[i];
+! 	    j = i;
+! 	}
+!     }
+!     UpdateOptimisedCoatings(&p[j][1]);
+  
+!     for (i=1; i<=N+1; i++) delete[] p[i];
+!     delete[] p;
+!     delete[] y;
+      global_target = NULL;
+      optimised_coating = NULL;
+  }
+--- 320,399 ----
+  
+  
+  void SimplexOptimisation(vector<Coating>& coatings,
+! 	AbstractTarget& target, Real step)
+  {
+!     const int params = NULL;    // GSL requires such parameters. Not needed
+!    				// in our program, though.
+! 
+!     const gsl_multimin_fminimizer_type *T = 
+! 	gsl_multimin_fminimizer_nmsimplex2;
+!     gsl_multimin_fminimizer *simplex = NULL;
+!     gsl_vector *steps, *x;
+!     gsl_multimin_function merit_min;
+! 
+!     size_t iter = 0;
+!     int status;
+!     double size;
+      int i, j, k, m, n, N;
+! 
+!     const float ftol = 1e-4; // the fractional tolerance
+      n = coatings.size();
+      for (i=0, N=0; i<n; i++) N += coatings[i].NumberOfVariableLayers();
++     
+      if (N<=0) return;
++ 
+      global_target = &target;
+      optimised_set_of_coatings = &coatings;
+!     Real* thicknesses = new Real[N];
+  
+!     // Starting point
+!     x = gsl_vector_alloc(N);
+!     for (i=0; i<N; i++) gsl_vector_set(x, i, thicknesses[i]); 
+! 
+!     steps = gsl_vector_alloc(N);
+!     gsl_vector_set_all(steps, step);
+! 	
+!     // Initialize
+!     merit_min.n = N;
+!     merit_min.f = funk1;
+!     merit_min.params = params;
+! 
+!     x = gsl_vector_alloc(N);
+!     j = 0;
+      for (i=0; i<n; i++)
+      {
+  	m = coatings[i].NumberOfVariableLayers();
+  	thicknesses = new Real[m];
+  	coatings[i].GetVariableThicknesses(thicknesses);
+! 	for (k=0; k<m; k++) gsl_vector_set(x, j++, thicknesses[k]);
+  	delete[] thicknesses;
+      }
+!     
+!     simplex = gsl_multimin_fminimizer_alloc(T, N);
+!     gsl_multimin_fminimizer_set(simplex, &merit_min, x, steps);
+! 
+!     do {
+! 	iter++;
+! 	status = gsl_multimin_fminimizer_iterate(simplex);
+  
+! 	if (status) break;
+! 
+! 	size = gsl_multimin_fminimizer_size(simplex);
+! 	status = gsl_multimin_test_size(size, ftol);
+! 	
+! 	/*if (status == GSL_SUCCESS)
+  	{
+! 	    printf("Converged to minumum.\n");
+! 	}*/
+! 
+!     } while (status == GSL_CONTINUE && iter < 10000);
+  
+!     for (i=0; i<N; i++) 
+! 	thicknesses[i] = abs(gsl_vector_get(simplex->x, i));
+! 
+!     UpdateOptimisedCoatings(&thicknesses[1]);
+!     
+!     delete[] thicknesses;
+      global_target = NULL;
+      optimised_coating = NULL;
+  }
+diff -rp ACD_nr/local.hh ACD_gsl/local.hh
+*** ACD_nr/local.hh	2005-02-10 21:04:52.000000000 +0100
+--- ACD_gsl/local.hh	2010-07-11 18:47:09.000000000 +0200
+***************
+*** 10,15 ****
+--- 10,16 ----
+  #include "target.hh"
+  #include <vector>
+  
++ 
+  void ConjugateGradientOptimisation(Coating& coating,
+  				   AbstractTarget& target);
+  
+diff -rp ACD_nr/Makefile ACD_gsl/Makefile
+*** ACD_nr/Makefile	2006-01-14 17:47:34.000000000 +0100
+--- ACD_gsl/Makefile	2010-07-11 21:58:08.000000000 +0200
+*************** OBJS1 := coating.o design.o interpolatio
+*** 13,19 ****
+          parameters.o reader.o
+  OBJS2 := analysis.o genetic.o local.o optimisation.o random.o target.o pulse.o
+  OBJS3 := target.o pulse.o
+! LDFILES = -lm -lopt -ldfftw # -lsfftw
+  
+  executables = acd acdfield acdinit
+  
+--- 13,19 ----
+          parameters.o reader.o
+  OBJS2 := analysis.o genetic.o local.o optimisation.o random.o target.o pulse.o
+  OBJS3 := target.o pulse.o
+! LDFILES = -lm -lgsl -lgslcblas -ldfftw # -lsfftw -lopt
+  
+  executables = acd acdfield acdinit
+  
+*************** all: $(executables)
+*** 22,41 ****
+  all_objects = $(OBJS1) $(OBJS2)
+  $(all_objects): %.o: %.cc %.hh common.hh
+  
+! acd: $(all_objects) main.cc libopt.a
+  	g++ $(CPPFLAGS) $(CXXFLAGS) $(all_objects) $(LDFLAGS) \
+  		$(LDFILES) main.cc -o acd
+  
+  acdfield: $(OBJS1) acdfield.cc
+  	g++ $(CPPFLAGS) $(CXXFLAGS) $(OBJS1) -lm acdfield.cc -o acdfield
+  
+! acdinit: $(OBJS1) $(OBJS3) acdinit.cc libopt.a
+  	g++ $(CPPFLAGS) $(CXXFLAGS) $(OBJS1) $(OBJS3) acdinit.cc \
+  	       $(LDFLAGS) $(LDFILES) -o acdinit
+  
+- libopt.a: optimisation/*.c
+- 	cd ./optimisation; ./makearchive && mv -f libopt.a ..
+- 
+  install: acd acdfield acdinit
+  	install acd /usr/local/bin/acd
+  	install acdfield /usr/local/bin/acdfield
+--- 22,38 ----
+  all_objects = $(OBJS1) $(OBJS2)
+  $(all_objects): %.o: %.cc %.hh common.hh
+  
+! acd: $(all_objects) main.cc 
+  	g++ $(CPPFLAGS) $(CXXFLAGS) $(all_objects) $(LDFLAGS) \
+  		$(LDFILES) main.cc -o acd
+  
+  acdfield: $(OBJS1) acdfield.cc
+  	g++ $(CPPFLAGS) $(CXXFLAGS) $(OBJS1) -lm acdfield.cc -o acdfield
+  
+! acdinit: $(OBJS1) $(OBJS3) acdinit.cc
+  	g++ $(CPPFLAGS) $(CXXFLAGS) $(OBJS1) $(OBJS3) acdinit.cc \
+  	       $(LDFLAGS) $(LDFILES) -o acdinit
+  
+  install: acd acdfield acdinit
+  	install acd /usr/local/bin/acd
+  	install acdfield /usr/local/bin/acdfield
+*************** clean:
+*** 54,57 ****
+  	rm -f *.o *~ TAGS
+  
+  cleanall:
+! 	rm -f *.o *~ TAGS $(executables) libopt.a
+--- 51,54 ----
+  	rm -f *.o *~ TAGS
+  
+  cleanall:
+! 	rm -f *.o *~ TAGS $(executables) 
+Only in ACD_nr: optimisation

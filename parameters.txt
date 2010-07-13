@@ -1,0 +1,222 @@
+# with this option the program prints some extra messages
+VERBOSE = yes
+
+# the data for each material is first searched in the current directory; if
+# it's not found there, it is searched under this path
+PATH TO MATERIALS = ./materials/ 
+
+# with this option the designs passed on the command line are assumed to
+# build a set of complementary coatings
+COMPLEMENTARY = no
+
+###########################################################################
+#                            GENERAL PARAMETERS                           #
+###########################################################################
+
+# the number of bounces off the mirror
+NUMBER OF BOUNCES = 1
+
+# the angle of incidence
+ANGLE OF INCIDENCE = 0
+
+# the polarisation of the beam (this parameter may have the following
+# values: TM, p, TE, s, where 'TM' is the same as 'p' and 'TE' is the same
+# as 's')
+POLARISATION = TM
+
+# the name of the incidence medium
+INCIDENCE MEDIUM = AIR
+
+# the name of the exit medium
+EXIT MEDIUM = FUSI
+
+# the wavelength at which dispersion is expanded into the Taylor series (in
+# nanometres)
+CENTRAL WAVELENGTH = 800
+
+# the minimal wavelength of the spectral region used for optimisation and
+# analysis (in nanometres)
+MINIMAL WAVELENGTH = 750
+
+# the maximal wavelength of the spectral region used for optimisation and
+# analysis (in nanometres)
+MAXIMAL WAVELENGTH = 850
+
+# the number of frequencies at which the coating properties are evaluated
+# during the optimisation stage (see also ANALYSIS RESOLUTION)
+RESOLUTION = 100
+
+# the number of frequencies at which the coating properties are evaluated
+# during the analysis stage; if this parameter is not specified, the
+# resolution is given by the parameter RESOLUTION
+ANALYSIS RESOLUTION = 
+
+###########################################################################
+#                          OPTIMISATION PARAMETERS                        #
+###########################################################################
+
+# a value between 0 and 1.0 meaning the target reflectance (1 corresponds
+# to the 100% reflectance and 0 means full transmittance)
+TARGET REFLECTANCE = 1.0
+
+# if at some particular wavelength the reflectance differs from the target
+# reflectance by less than this value, then this point doesn't contribute
+# to the merit function at all; the parameter must be either a number or a
+# file name in quotes
+REFLECTANCE RESERVE = 0
+
+# a tolerable difference between the target value of the reflectance and
+# the reflectance of the optimised design; the parameter must be either a
+# number or a file name in quotes
+REFLECTANCE TOLERANCE = 0.0001
+
+# this parameter specifies the target dispersion; it must be either a list
+# of whitespace-separated numbers or a file name in quotes. In the first
+# case the list of whitespace-separated numbers is the Taylor expansion of
+# the target GDD (in fs^2) at the central wavelength: the first number is
+# the GDD, the second number is the TOD and so on; if a file name in quotes
+# is given, the file must contain the target GDD [fs^2] against the
+# wavelength [nm]
+TARGET DISPERSION = 0.0 0.0 0.0
+
+# if the "adaptive dispersion" is activated, then each time a
+# dispersion-based merit function is evaluated, the target dispersion will
+# be adapted to the obtained one by multiplication by a proper factor
+ADAPTIVE DISPERSION = no
+
+# a value between 0 and 1, which determines the weight of the GD against
+# the GDD in the merit function
+GD CONTRIBUTION = 0
+
+# if at some particular wavelength the GD differs from the target GD by
+# less than this value, then this point doesn't contribute to the merit
+# function at all; the parameter must be either a number or a file name in
+# quotes
+GD RESERVE = 0
+
+# a tolerable average difference between the target and obtained GD [fs];
+# the parameter must be either a number or a file name in quotes
+#GD TOLERANCE = 3.0
+GD TOLERANCE = 300000.0
+
+# if at some particular wavelength the GDD differs from the target GDD by
+# less than this value, then this point doesn't contribute to the merit
+# function at all; the parameter must be either a number or a file name in
+# quotes
+GDD RESERVE = 0
+
+# a tolerable average difference between the target and obtained GDD [fs^2];
+# the parameter must be either a number or a file name in quotes
+#GDD TOLERANCE = 20
+GDD TOLERANCE = 200000
+
+# the power of the merit function
+MERIT POWER = 2
+
+# a number between 0 and 1, which defines how important it is that each
+# mirror in a set of complementary mirrors has nice properties alone: if
+# the parameter is equal to 0, only the properties of the whole system are
+# considered; if it is equal to 1, the coatings are optimised independently
+# of each other
+INDIVIDUALISM = 0.5
+
+# optimisation will try to avoid layers thinner than
+MINIMAL THICKNESS = 0
+
+# the way how the merit function will be calculated (the valid options are
+# 'GDD' and 'pulse')
+TARGET TYPE = GDD
+
+# the algorithm that will be used for the local optimisation (the valid
+# names are 'simplex' and 'gradient')
+LOCAL OPTIMISATION ALGORITHM = gradient 
+
+# if the simplex algorithm is used for the local optimisation, this
+# parameter specifies the variation of the layer thickness [nm] used to
+# build the initial simplex
+SIMPLEX STEP = 10
+
+# the population size to be used for the global optimisation
+POPULATION SIZE = 100
+
+# the maximal number of generations an evolutionary algorithm can go
+# through (if this value is equal to zero, it means that only the
+# 'CONVERGENCE' will determine when to stop the iterations)
+NUMBER OF GENERATIONS = 1000
+
+# the value which indicates the convergence of an evolutionary algorithm
+# (0.01 is a reasonable value for this parameter, see also NUMBER OF
+# GENERATIONS)
+CONVERGENCE = 0.0
+
+# mutation plays an important role in the global optimisation; this
+# parameter must have a value between 0 and 1, which determines the
+# probability of each 'gene' (layer thickness) to be mutated (randomly
+# altered)
+MUTATION PROBABILITY = 0.02
+
+# the number of distinct designs to be refined and saved after the global
+# optimisation
+NUMBER OF RESULTS = 1
+
+###########################################################################
+#                            ANALYSIS PARAMETERS                          #
+###########################################################################
+
+# this option determines whether the sensitivity analysis has to be
+# performed
+SENSITIVITY = no
+
+# the number of trials used to estimate the effect of perturbations of
+# layer thicknesses due to technological errors
+NUMBER OF TRIALS = 1000
+
+# the mean value of random technological perturbations used for the
+# sensitivity analysis (in nanometres)
+TECHNOLOGICAL ERROR = 1.0
+
+# if this option is set to "yes" or "true", the transmittance of the
+# designs is calculated and saved; if it is set to "no" of "false", the
+# transmittance is not saved; if this option is not set, the transmittance
+# is only saved if one of the materials has a non-zero absorption or gain
+SAVE TRANSMITTANCE = 
+
+# if this option is set to "yes" or "true", the absorption of the designs
+# is calculated and saved; if it is set to "no" of "false", the absorption
+# is not saved; if this option is not set, the absorption is only saved if
+# one of the materials has a non-zero absorption or gain
+SAVE ABSORPTION =
+
+# if this option is set to "yes" or "true", the phase shift upon reflection
+# is calculated and saved; if this option is set to "no" of "false", the
+# phase is not saved
+SAVE PHASE = no
+
+###########################################################################
+#                               PROBE PULSE                               #
+###########################################################################
+
+# the kind of probe pulse to be used for optimisation and analysis; if no
+# value is specified for this parameter, the simulation of a probe pulse
+# reflection is disabled; the probe pulse can be either 'gaussian' or
+# 'supergaussian' or a file name can be given in quotes. The file must
+# contain the spectrum of the probe pulse: the wavelength in the first
+# column, the spectral intensity in the second, and the optional spectral
+# phase in radians in the third column. If the probe pulse is
+# super-Gaussian, the word 'supergaussian' must be followed by a whitespace
+# and an integer number, which is the order of the pulse ('1' corresponds
+# to the usual Gaussian pulse, the higher the order, the more rectangular
+# is the pulse); if the probe pulse is Gaussian or super-Gaussian, 'PULSE
+# CENTRAL WAVELENGTH' and 'PROBE PULSE FWHM' can specify its parameters
+PROBE PULSE = 
+
+# the spectral width (FWHM) of the probe pulse (in nanometres); if the
+# parameter is not initialised, a reasonable value will be used for the
+# FWHM
+PROBE PULSE FWHM = 
+
+# the central wavelength of the probe pulse (in nanometres); if the
+# parameter is not initialised, the value of CENTRAL WAVELENGTH will be
+# used
+PULSE CENTRAL WAVELENGTH = 
+

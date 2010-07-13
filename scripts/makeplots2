@@ -1,0 +1,74 @@
+#!/usr/bin/gnuplot
+
+# This is a Gnuplot script, which plots a standard analysis of two
+# complementary mirrors, which are named 'design1' and 'design2'
+
+set term postscript color 'Helvetica' 20
+set grid
+set timestamp
+set output 'plots.ps'
+
+set title 'Reflectance'
+set xlabel 'wavelength, nm'
+set ylabel '%'
+plot 'design1.R.dat' title "design1" with lines linetype 3 linewidth 2, \
+     'design2.R.dat' title "design2" with lines linetype 2 linewidth 2, \
+     'averaged.R.dat' title "averaged" with lines linetype 1 linewidth 3
+
+set title 'Averaged Reflectance (per bounce, 1 nm errors)'
+set xlabel 'wavelength, nm'
+set ylabel '%'
+plot 'averaged.R.dat' title '' with lines linetype 1 linewidth 3, \
+     'averaged.R.dat' every 3 title '' with errorbars linetype 1 linewidth 1
+
+set title 'Group Delay Dispersion (GDD)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs^2'
+plot 'design1.GDD.dat' title "design1" with lines linetype 3 linewidth 2, \
+     'design2.GDD.dat' title "design2" with lines linetype 2 linewidth 2, \
+     'averaged.GDD.dat' title "averaged" with lines linetype 1 linewidth 3
+
+set title 'Averaged Group Delay Dispersion (per bounce, 1 nm errors)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs^2'
+plot 'averaged.GDD.dat' title '' with lines linetype 1 linewidth 3, \
+     'averaged.GDD.dat' every 3 title '' with errorbars linetype 1 linewidth 1
+
+set title 'Group Delay (GD)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs'
+plot 'design1.GD.dat' title "design1" with lines linetype 3 linewidth 2, \
+     'design2.GD.dat' title "design2" with lines linetype 2 linewidth 2, \
+     'averaged.GD.dat' title "averaged" with lines linetype 1 linewidth 3
+
+set title 'Averaged Group Delay (per bounce, 1 nm errors)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs'
+plot 'averaged.GD.dat' title '' with lines linetype 1 linewidth 3, \
+     'averaged.GD.dat' every 3 title '' with errorbars linetype 1 linewidth 1
+
+set title 'Uncompensated Group Delay'
+set xlabel 'wavelength, nm'
+set ylabel 'fs'
+plot 'design1.uGD.dat' title "design1" with lines linetype 3 linewidth 2, \
+     'design2.uGD.dat' title "design2" with lines linetype 2 linewidth 2, \
+     'averaged.uGD.dat' title "averaged" with lines linetype 1 linewidth 3
+
+set title 'Averaged Uncompensated Group Delay (per bounce, 1 nm errors)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs'
+plot 'averaged.uGD.dat' title '' with lines linetype 1 linewidth 3, \
+     'averaged.uGD.dat' every 3 title '' with errorbars linetype 1 linewidth 1
+
+set title 'Simulation of Pulse Reflection (1 nm errors)'
+set xlabel 'time, fs'
+set ylabel 'intensity, arb. units'
+set key
+plot [-100:100] 'averaged.I.dat' title 'reflected' with lines linetype 1 linewidth 3, \
+     'averaged.I.dat' every 10 title '' with errorbars linetype 1 linewidth 1, \
+     'probe_pulse.dat' title 'probe' with lines linetype 3 linewidth 2
+
+set title 'Spectrum of the Probe Pulse'
+set xlabel 'wavelength, nm'
+set ylabel 'arb. units'
+plot 'probe_spectrum.dat' title '' with lines linewidth 3

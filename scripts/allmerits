@@ -1,0 +1,8 @@
+#!/bin/bash
+for i in `seq -w 99`; do
+	if [ -d "$i" -a -f "$i"/analysis.txt ]; then
+		echo -n $i" "
+		sed -n -e '/^design1/s/design1[[:space:]]\+\(.*\)/\1/p' "$i"/analysis.txt
+	fi
+done
+echo

@@ -1,0 +1,53 @@
+PATH TO MATERIALS = 
+COMPLEMENTARY = no
+
+###########################################################################
+#                            GENERAL PARAMETERS                           #
+###########################################################################
+
+NUMBER OF BOUNCES = 1
+ANGLE OF INCIDENCE = 0
+POLARISATION = TM
+INCIDENCE MEDIUM = AIR
+EXIT MEDIUM = FUSI
+CENTRAL WAVELENGTH = 800
+MINIMAL WAVELENGTH = 500
+MAXIMAL WAVELENGTH = 1000
+RESOLUTION = 100
+ANALYSIS RESOLUTION = 
+
+###########################################################################
+#                          OPTIMISATION PARAMETERS                        #
+###########################################################################
+
+TARGET REFLECTANCE = 1.0
+REFLECTANCE TOLERANCE = 0.01
+TARGET DISPERSION = 0.0 0.0 0.0
+ADAPTIVE DISPERSION = no
+GD CONTRIBUTION = 0
+GD TOLERANCE = 3.0
+GDD TOLERANCE = 20
+INDIVIDUALISM = 0.5
+MINIMAL THICKNESS = 0
+TARGET TYPE = GDD
+POPULATION SIZE = 100
+NUMBER OF GENERATIONS = 1000
+MUTATION PROBABILITY = 0.02
+NUMBER OF RESULTS = 1
+
+###########################################################################
+#                            ANALYSIS PARAMETERS                          #
+###########################################################################
+
+SENSITIVITY = no
+NUMBER OF TRIALS = 1000
+TECHNOLOGICAL ERROR = 1.0
+
+###########################################################################
+#                               PROBE PULSE                               #
+###########################################################################
+
+PROBE PULSE = 
+PROBE PULSE FWHM = 
+PULSE CENTRAL WAVELENGTH = 
+

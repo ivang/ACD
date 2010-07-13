@@ -1,0 +1,51 @@
+#!/usr/bin/gnuplot
+
+# This is a Gnuplot script, which plots a standard analysis of a design
+# named 'design1'
+
+set term postscript color 'Helvetica' 20
+set grid
+set timestamp
+set output 'plots.ps'
+
+set title 'Reflectance'
+set xlabel 'wavelength, nm'
+set ylabel '%'
+set nokey
+plot 'design1.R.dat' with lines linetype 1 linewidth 3, \
+     'design1.R.dat' every 3 with errorbars linetype 1 linewidth 1
+
+set title 'Group Delay Dispersion (GDD)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs^2'
+set nokey
+plot 'design1.GDD.dat' with lines linetype 1 linewidth 3, \
+     'design1.GDD.dat' every 3 with errorbars linetype 1 linewidth 1
+
+set title 'Group Delay (GD)'
+set xlabel 'wavelength, nm'
+set ylabel 'fs'
+set nokey
+plot 'design1.GD.dat' with lines linetype 1 linewidth 3, \
+     'design1.GD.dat' every 3 with errorbars linetype 1 linewidth 1
+
+set title 'Uncompensated Group Delay'
+set xlabel 'wavelength, nm'
+set ylabel 'fs'
+set nokey
+plot 'design1.uGD.dat' with lines linetype 1 linewidth 3, \
+     'design1.uGD.dat' every 3 with errorbars linetype 1 linewidth 1
+
+set title 'Simulation of Pulse Reflection'
+set xlabel 'time, fs'
+set ylabel 'intensity, arb. units'
+set key
+plot 'design1.I.dat' title 'reflected' with lines linetype 1 linewidth 3, \
+     'design1.I.dat' every 10 title '' with errorbars linetype 1 linewidth 1, \
+     'probe_pulse.dat' title 'probe' with lines linetype 3 linewidth 2
+
+set title 'Spectrum of the Probe Pulse'
+set xlabel 'wavelength, nm'
+set ylabel 'arb. units'
+set nokey
+plot 'probe_spectrum.dat' with lines linewidth 3
