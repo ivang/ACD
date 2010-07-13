@@ -1,10 +1,18 @@
 Advanced Coating Designer
 -------------------------
 
-Copyright (C) 2005  Vladislav Yakovlev
+Copyright (C) 2005-2009 Vladislav Yakovlev
+                   2010 Ivan Angelov
 
 
-Initially this software was written by Vladislav Yakovlev. With his 
-permission, it is now published under GPLv3.
+This software was first written by Vladislav Yakovlev and had no license, 
+as it was never published. Now, with Vlad's permission, his software has 
+been published under the GPLv3 (see COPYING). Originally, non-free 
+"numerical recipies" were used in some functions and therefore, in order 
+to publish this software under a free license, they had to be rewritten. 
+Now they use the GNU Scientific Library, which makes it possible that 
+this software is free.
 
-Ivan Angelov
+The differences between Vlad's original code and the initial free 
+version of it are summerized in the "ACD_nr_to_gsl.patch" file.
+
