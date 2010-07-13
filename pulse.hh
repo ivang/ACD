@@ -6,7 +6,7 @@
 #ifdef SINGLE_PRECISION
 #include "sfftw.h"
 #else
-#include "dfftw.h"
+#include "fftw.h"
 #endif
 
 

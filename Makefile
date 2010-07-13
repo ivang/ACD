@@ -13,7 +13,7 @@ OBJS1 := coating.o design.o interpolation.o material.o dispersion.o \
         parameters.o reader.o
 OBJS2 := analysis.o genetic.o local.o optimisation.o random.o target.o pulse.o
 OBJS3 := target.o pulse.o
-LDFILES = -lm -lgsl -lgslcblas -ldfftw # -lsfftw -lopt
+LDFILES = -lm -lgsl -lgslcblas -lfftw # -lsfftw 
 
 executables = acd acdfield acdinit
 
