@@ -5,14 +5,14 @@ Copyright (C) 2005-2009 Vladislav Yakovlev
                    2010 Ivan Angelov
 
 
-This software was first written by Vladislav Yakovlev and had no license, 
-as it was never published. Now, with Vlad's permission, his software has 
-been published under the GPLv3 (see COPYING). Originally, non-free 
-"numerical recipies" were used in some functions and therefore, in order 
-to publish this software under a free license, they had to be rewritten. 
-Now they use the GNU Scientific Library, which makes it possible that 
-this software is free.
+This software was first written by Vladislav Yakovlev and had no license,
+for it has never been really published. Now, with Vlad's permission, his
+software has been published under the GPLv3 (see COPYING). Originally,
+non-free "numerical recipies" were used in some functions and therefore, in
+order to publish this software under a free license, they had to be
+rewritten. Now these functions refer to the GNU Scientific Library instead,
+which makes it possible that this software is free.
 
-The differences between Vlad's original code and the initial free 
-version of it are summerized in the "ACD_nr_to_gsl.patch" file.
+The differences between Vlad's original code and the initial free version of
+it are summarized in the "ACD_nr_to_gsl.patch" file.
 
