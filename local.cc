@@ -1,11 +1,6 @@
 #include "local.hh"
 #include "gsl/gsl_multimin.h"
 
-extern "C"
-{
-#	include "numrec.h"
-}
-
 //-------------------------------------------------------------------------
 // the following variables are initialised when a local optimisation
 // starts

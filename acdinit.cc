@@ -21,11 +21,6 @@
 
 #include "gsl/gsl_multimin.h"
 
-extern "C"
-{
-#include "numrec.h"
-}
-
 //-------------------------------------------------------------------------
 
 void Usage(Parameters& parameters)
