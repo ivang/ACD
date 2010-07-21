@@ -29,7 +29,9 @@ void InitialiseUnusedParameters(Parameters& parameters);
 void Analyse(vector<Design>& designs, Parameters& parameters,
 	     MaterialRepository& material_repository);
 
-int SaveField(const int Nx, const int Ny, Real** Z, const char* file_name);
+int SaveField(const int Nx, const int Ny, const Real dx, 
+	const Real lambda_min, const Real lambda_max, 
+	Real** Z, const char* file_name);
 /* returns 0 if the data have been successfully saved */
 
 int Visualise(const int Nx, const int Ny, Real** Z,
@@ -324,7 +326,7 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 	if (save_data)
 	{
 	    str = designs[m].name + "_efi.dat";
-	    k = SaveField(Nx, N, Z, str.c_str());
+	    k = SaveField(Nx, N, dx, lambda_min, lambda_max, Z, str.c_str());
 	    if (verbose && k==0)
 		cout << str << " saved" << endl;
 	}
@@ -343,19 +345,24 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 
 //-------------------------------------------------------------------------
 
-int SaveField(const int Nx, const int Ny, Real** Z, const char* file_name)
+int SaveField(const int Nx, const int Ny, const Real dx, 
+	const Real lambda_min, const Real lambda_max, 
+	Real** Z, const char* file_name)
 {
     int i, j;
     FILE* file = fopen(file_name, "w");
+    const Real dlambda = (lambda_max - lambda_min)/Ny;
 
     if (! file)
     {
 	cerr << "FAILED to open " << file_name << endl;
 	return -1;
     }
-    for (i=0; i<Nx; i++)
-    {
-	for (j=0; j<Ny; j++) fprintf(file, "%e.4 ", Z[i][j]);
+    for (i=0; i<Nx; i++) {
+	for (j=0; j<Ny; j++) {
+		fprintf(file, "%5.1f %5.1f %.4e\n", 
+			i * dx, lambda_min + j * dlambda, Z[i][j]);
+	}
 	fprintf(file, "\n");
     }
     fclose(file);
