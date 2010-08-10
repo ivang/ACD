@@ -6,7 +6,7 @@
 # MS Windows
 
 .PHONY: all clean cleanall install TAGS
-CPPFLAGS = -Ioptimisation # -DMS_WINDOWS # -DSINGLE_PRECISION # -DDEBUG
+CPPFLAGS = -ggdb -Ioptimisation # -DMS_WINDOWS # -DSINGLE_PRECISION # -DDEBUG
 CXXFLAGS = -Wall -O2
 LDFLAGS = -L.  # -static -static-libgcc
 OBJS1 := coating.o design.o interpolation.o material.o dispersion.o \

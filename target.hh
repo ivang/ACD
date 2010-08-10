@@ -75,7 +75,8 @@ protected:
     Real* reflectance;
     Real* phase_shift;
 
-    virtual Real Merit(Real* reflectance, Real* phase_shift) = 0;
+    virtual Real Merit(Coating& coating, Complex* reflectivity=NULL, 
+	    Real* _reflectance=NULL, Real* _phase_shift=NULL) = 0;
     /* this function is the core of the abstraction: different targets
        calculate the figure of merit in different ways; the
        number of frequencies from 'number_of_frequencies' is assumed to
@@ -124,7 +125,8 @@ protected:
     bool adaptive_dispersion;
     Real* GD;
     Real* GDD;
-    Real Merit(Real* reflectance, Real* phase_shift);
+    Real Merit(Coating& coating, Complex* reflectivity=NULL,
+	    Real* _reflectance=NULL, Real* _phase_shift=NULL);
 };
 
 //-------------------------------------------------------------------------
@@ -154,7 +156,8 @@ protected:
     Real* AD_weights; // used to handle adaptive dispersion
     Complex* reflected_pulse;
     Pulse* pulse;
-    Real Merit(Real* reflectance, Real* phase_shift);
+    Real Merit(Coating& coating, Complex* reflectivity=NULL,
+	    Real* _reflectance=NULL, Real* _phase_shift=NULL);
 
     Real AD_Factor(const Real* GDD) const;
     /* an analog of 'AdaptiveDispersionFactor', which uses the given weights

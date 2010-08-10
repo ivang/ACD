@@ -87,9 +87,7 @@ Real AbstractTarget::MeritFunction(Coating& coating)
     Real merit;
     CheckCoating(coating);
     coating.Reflectivity(reflectivity);
-    Reflectance(number_of_frequencies, reflectivity, reflectance);
-    PhaseShift(number_of_frequencies, reflectivity, phase_shift);
-    merit = Merit(reflectance, phase_shift) + NonReflectivityMerit(coating);
+    merit = Merit(coating) + NonReflectivityMerit(coating);
     if (isinf(merit) || isnan(merit))
     {
 	throw "ERROR in AbstractTarget::MeritFunction:\n\
@@ -106,9 +104,7 @@ Real AbstractTarget::MeritFunction(Coating& coating, int layer,
     Real merit;
     CheckCoating(coating);
     coating.TryLayerThickness(layer, thickness, reflectivity);
-    Reflectance(number_of_frequencies, reflectivity, reflectance);
-    PhaseShift(number_of_frequencies, reflectivity, phase_shift);
-    merit = Merit(reflectance, phase_shift);
+    merit = Merit(coating, reflectivity);
     merit += NonReflectivityMerit(coating, layer, thickness);
     if (isinf(merit) || isnan(merit))
     {
@@ -148,7 +144,7 @@ Real AbstractTarget::MeritFunction(vector<Coating>& coatings)
 	    net_phase_shift[i] += phase_shift[i];
 	}
 	if (individualism != Real(0))
-	    sum_of_merits += Merit(reflectance, phase_shift);
+	    sum_of_merits += Merit(coatings[k], reflectivity);
     }
     // analyse the set of mirrors as a whole
     for (i=0; i<number_of_frequencies; i++)
@@ -156,7 +152,8 @@ Real AbstractTarget::MeritFunction(vector<Coating>& coatings)
 	net_reflectance[i] = pow(net_reflectance[i], Real(1)/n);
 	net_phase_shift[i] /= n;
     }
-    merit_of_the_set = Merit(net_reflectance, net_phase_shift);
+    merit_of_the_set = Merit(coatings[1], reflectivity=NULL,
+	    net_reflectance, net_phase_shift);
     merit = individualism*sum_of_merits/n + 
 	(Real(1)-individualism)*merit_of_the_set;
     merit += NonReflectivityMerit(coatings);
@@ -187,15 +184,11 @@ void AbstractTarget::MeritGradient(Coating& coating, Real* gradient)
     {
 	d = thicknesses[i] + small_thickness_variation;
 	coating.TryLayerThickness(i, d, reflectivity);
-	Reflectance(number_of_frequencies, reflectivity, reflectance);
-	PhaseShift(number_of_frequencies, reflectivity, phase_shift);
-	f2 = Merit(reflectance, phase_shift) +
+	f2 = Merit(coating, reflectivity) +
 	    NonReflectivityMerit(coating, i, d);
 	d = thicknesses[i] - small_thickness_variation;
 	coating.TryLayerThickness(i, d, reflectivity);
-	Reflectance(number_of_frequencies, reflectivity, reflectance);
-	PhaseShift(number_of_frequencies, reflectivity, phase_shift);
-	f1 = Merit(reflectance, phase_shift) +
+	f1 = Merit(coating, reflectivity) +
 	    NonReflectivityMerit(coating, i, d);
 	gradient[i] = (f2 - f1) / (2.0*small_thickness_variation);
     }
@@ -228,9 +221,7 @@ void AbstractTarget::MeritGradient(vector<Coating>& coatings, Real* gradient)
 	reflectivities[coating_index] = new Complex[N];
 	coatings[coating_index].Reflectivity(reflectivity);
 	for (i=0; i<N; i++) reflectivities[coating_index][i] = reflectivity[i];
-	Reflectance(N, reflectivity, reflectance);
-	PhaseShift(N, reflectivity, phase_shift);
-	merits[coating_index] = Merit(reflectance, phase_shift);
+	merits[coating_index] = Merit(coatings[coating_index], reflectivity);
 	sum_of_merits += merits[coating_index];
     }
     // calculate the gradient
@@ -248,9 +239,7 @@ void AbstractTarget::MeritGradient(vector<Coating>& coatings, Real* gradient)
 	    d = thicknesses[i] + small_thickness_variation;
 	    coatings[coating_index].TryLayerThickness(i, d, reflectivity);
 	    // calculate the figure of merit for the perturbed coating
-	    Reflectance(N, reflectivity, reflectance);
-	    PhaseShift(N, reflectivity, phase_shift);
-	    merit = Merit(reflectance, phase_shift);
+	    merit = Merit(coatings[coating_index], reflectivity);
             // calculate the net reflectivity of the set of mirrors
 	    for (j=0; j<N; j++)
 	    {
@@ -287,7 +276,8 @@ void AbstractTarget::MeritGradient(vector<Coating>& coatings, Real* gradient)
 		net_phase_shift[j] /= number_of_coatings;
 	    }
 	    // analyse the system of mirrors as a whole
-	    merit_of_the_set = Merit(net_reflectance, net_phase_shift);
+	    merit_of_the_set = Merit(coatings[1], reflectivity=NULL,
+		    net_reflectance, net_phase_shift);
 	    // calculate the perturbed merit function
 	    f2 = individualism *
 		(sum_of_merits-merits[coating_index] + merit) / 
@@ -298,9 +288,7 @@ void AbstractTarget::MeritGradient(vector<Coating>& coatings, Real* gradient)
 	    d = thicknesses[i] - small_thickness_variation;
 	    coatings[coating_index].TryLayerThickness(i, d, reflectivity);
 	    // calculate the figure of merit for the perturbed coating
-	    Reflectance(N, reflectivity, reflectance);
-	    PhaseShift(N, reflectivity, phase_shift);
-	    merit = Merit(reflectance, phase_shift);
+	    merit = Merit(coatings[coating_index], reflectivity);
             // calculate the net reflectivity of the set of mirrors
 	    for (j=0; j<N; j++)
 	    {
@@ -337,7 +325,8 @@ void AbstractTarget::MeritGradient(vector<Coating>& coatings, Real* gradient)
 		net_phase_shift[j] /= number_of_coatings;
 	    }
 	    // analyse the system of mirrors as a whole
-	    merit_of_the_set = Merit(net_reflectance, net_phase_shift);
+	    merit_of_the_set = Merit(coatings[1], reflectivity=NULL, 
+		    net_reflectance, net_phase_shift);
 	    // calculate the perturbed merit function
 	    f1 = individualism *
 		(sum_of_merits-merits[coating_index]+ merit) /
@@ -524,17 +513,29 @@ GDDTarget::~GDDTarget()
 
 //-------------------------------------------------------------------------
 
-Real GDDTarget::Merit(Real* _reflectance, Real* _phase_shift)
+Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
+       Real* _reflectance, Real* _phase_shift)
 {
     int i, N;
     Real GD_shift, x, reserve, tolerance, omega_step, result;
-    Real merit_from_R, merit_from_GD, merit_from_GDD;
+    Real merit_from_R, merit_from_GD, merit_from_GDD, merit_from_E;
+
+    if (!_reflectance) _reflectance = new Real[number_of_frequencies];
+    if (!_phase_shift) _phase_shift = new Real[number_of_frequencies];
+    
+    if (!reflectivity) {
+	reflectivity = new Complex[number_of_frequencies];
+	coating.Reflectivity(reflectivity);
+    }
+    
+    Reflectance(number_of_frequencies, reflectivity, _reflectance);
+    PhaseShift(number_of_frequencies, reflectivity, _phase_shift);
 
     N = number_of_frequencies;
     omega_step = (frequencies[N-1] - frequencies[0]) / Real(N-1);
     PhaseToGD(N, omega_step, _phase_shift, GD);
     PhaseToGDD(N, omega_step, _phase_shift, GDD);
-
+    
     // maybe we make more than one bounce
     if (number_of_bounces > 1)
     {
@@ -568,6 +569,8 @@ Real GDDTarget::Merit(Real* _reflectance, Real* _phase_shift)
     merit_from_R = 0.0;
     merit_from_GD = 0.0;
     merit_from_GDD = 0.0;
+    merit_from_E = 0.0;
+
     for (i=0; i<N; i++)
     {
 	if (GD_contribution != Real(0))
@@ -712,11 +715,21 @@ PulseTarget::~PulseTarget()
 
 //-------------------------------------------------------------------------
 
-Real PulseTarget::Merit(Real* _reflectance, Real* _phase_shift)
+Real PulseTarget::Merit(Coating& coating, Complex* reflectivity,
+       Real* _reflectance, Real* _phase_shift)
 {
     int i, j;
     Real I_max;
     int i1 = (N_pulse-number_of_frequencies)/2;
+
+    if (!_reflectance) _reflectance = new Real[number_of_frequencies];
+    if (!_phase_shift) _phase_shift = new Real[number_of_frequencies];
+    
+    if (!reflectivity) coating.Reflectivity(reflectivity);
+
+    Reflectance(number_of_frequencies, reflectivity, _reflectance);
+    PhaseShift(number_of_frequencies, reflectivity, _phase_shift);
+    
     for (i=0; i<i1; i++) reflected_pulse[i] = 0;
     for (j=0; j<number_of_frequencies; j++)
 	reflectivity[j] = polar(sqrt(_reflectance[j]), _phase_shift[j]);
