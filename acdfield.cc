@@ -307,22 +307,8 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 	stack_thickness = designs[m].StackThickness();
 	Nx = int(ceil(stack_thickness/dx));
 	Z = new Real*[Nx];
-	for (k=0,x=0; k<Nx; k++,x+=dx)
-	{
-	    Z[k] = new Real[N];
-	    coating.FieldAmplitude(x, E, H);
-	    for (i=0; i<N; i++)
-	    {
-	        Z[k][i] = norm(E[i]);
-	    }
-	}
-	//normalise the intensity to the intensity of the incident light
-	coating.FieldAmplitude(-1, E, H, eta);
-	for (i=0; i<N; i++)
-	{
-	    x = norm(E[i] + H[i]/eta[i])/4;
-	    for (k=0; k<Nx; k++) Z[k][i] /= x;
-	}
+	coating.EFieldIntensity(N, Nx, dx, Z);
+
 	if (save_data)
 	{
 	    str = designs[m].name + "_efi.dat";
@@ -358,10 +344,12 @@ int SaveField(const int Nx, const int Ny, const Real dx,
 	cerr << "FAILED to open " << file_name << endl;
 	return -1;
     }
-    for (i=0; i<Nx; i++) {
-	for (j=0; j<Ny; j++) {
-		fprintf(file, "%5.1f %5.1f %.4e\n", 
-			i * dx, lambda_min + j * dlambda, Z[i][j]);
+    for (i=0; i<Nx; i++)
+    {
+	for (j=0; j<Ny; j++) 
+	{
+	    fprintf(file, "%5.1f %5.1f %.4e\n",
+		    i * dx, lambda_min + j * dlambda, Z[i][j]);
 	}
 	fprintf(file, "\n");
     }

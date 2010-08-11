@@ -128,6 +128,16 @@ public:
        initialised with the impedance of the medium of the given layer:
        H_t=eta*E_t for the light propagating towards the substrate. */
 
+    void EFieldIntensity(const int N, const int Nx, const Real dx, 
+	    Real** Z, const bool normalise=true);
+    /* This function calculates the electric field intensity distribution inside
+     * the layerstack. 'N' is the number of frequencies, 'Nx' is the number of 
+     * penetration steps into the layers, 'dx' is the size of each step given 
+     * in [nm]. If 'normalise' is true, the electric field intensity will be 
+     * normalised to the incident field. In most cases this is convenient, thus 
+     * the default value is 'true'.
+     */
+
 private:
     int N; // the number of frequencies to simulate
     int number_of_materials;

@@ -1443,6 +1443,44 @@ void Coating::FieldAmplitude(Real penetration_depth, Complex* E, Complex* H,
     FieldAmplitude(i-1, -penetration_depth, E, H, _eta);
 }
 
+// ---------------------------------------------------------
+
+void Coating::EFieldIntensity(const int N, const int Nx, 
+	const Real dx, Real** Z, const bool normalise)
+{
+    Complex *E, *H, *eta;
+    int i, k;
+    Real x;
+
+    E = new Complex[N];
+    H = new Complex[N];
+    eta = new Complex[N];
+    
+    for (k=0,x=0; k<Nx; k++,x+=dx)
+    {
+	Z[k] = new Real[N];
+	FieldAmplitude(x, E, H);
+	for (i=0; i<N; i++)
+	    Z[k][i] = norm(E[i]);
+    }
+
+    //normalise the intensity to the intensity of the incident light
+    if (normalise)
+    {
+	FieldAmplitude(-1, E, H, eta);
+	for (i=0; i<N; i++)
+	    for (k=0; k<Nx; k++)
+	    {
+		Z[k][i] /= norm(E[i] + H[i]/eta[i])/4;
+	    }
+    }
+
+    delete[] E;
+    delete[] H;
+    delete[] eta;
+}
+
+
 //=========================================================================
 
 void Reflectance(int N, Complex* reflectivity, Real* reflectance)
