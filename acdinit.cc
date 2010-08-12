@@ -124,6 +124,7 @@ int main(int argc, const char** argv)
     Real minimal_thickness;
     bool adaptive_dispersion;
     Real GD_contribution;
+    Real target_EF, EF_tolerance, EF_reserve, dx;
 
     // initalise the parameters
     Parameters parameters;
@@ -280,6 +281,12 @@ You must give one or more names of design files on the command line."
 	{
 	    GD_contribution << parameters("GD CONTRIBUTION");
 	    merit_power << parameters("MERIT POWER");
+
+	    target_EF << parameters("TARGET EF");
+	    EF_tolerance << parameters("EF TOLERANCE");
+	    EF_reserve << parameters("EF RESERVE");
+	    dx << parameters("STEP");
+
 	    target = new GDDTarget(number_of_frequencies,
 				   omega_min, omega_max,
 				   variables.TargetDispersion(),
@@ -292,6 +299,10 @@ You must give one or more names of design files on the command line."
 				   variables.ReflectanceTolerance(),
 				   variables.ReflectanceReserve(),
 				   number_of_bounces,
+				   target_EF,
+				   EF_tolerance,
+				   EF_reserve,
+				   dx,  // STEP
 				   minimal_thickness,
 				   0.0, /* individualism */
 				   merit_power,
@@ -371,6 +382,16 @@ void DesignNames(int argc, const char** argv, vector<string>& names)
 
 void InitialiseParameters(Parameters& p)
 {
+    p.AddParameter("STEP", "10", "the step with which the stack has \
+to be scanned (in nanometres)");
+    p.AddParameter("TARGET EF", "0.7", "the target value of the \
+	    normalised electric field");
+    p.AddParameter("EF TOLERANCE", "0.05", "a tolerable average \
+	    difference between the target and obtained EF");
+    p.AddParameter("EF RESERVE", "0", "if at some particular wavelength \
+	    the EF differs from the target EF by less than this value, \
+	    then this point doesn't contribute to the merit function \
+	    at all");
     p.AddParameter("VERBOSE", "no", "with this option the program \
 prints some extra messages");
     p.AddParameter("INCIDENCE MEDIUM", "AIR",
@@ -476,7 +497,7 @@ of the layer thickness [nm] used to build the initial simplex");
 		   "the data for each material is first searched in the \
 current directory; if it's not found there, it is searched under this path");
     // parameters specific to 'acdinit'
-    p.AddParameter("PARAMETRISATION ORDER", "10",
+    p.AddParameter("PARAMETRISATION ORDER", "3",
 		   "the maximal number of parameters, which specify the \
 thicknesses of layers with either low-or high refractive index");
 }

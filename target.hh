@@ -102,6 +102,10 @@ class GDDTarget: public AbstractTarget
 	      AbstractParameter& reflectance_tolerance,
 	      AbstractParameter& reflectance_reserve,
 	      int number_of_bounces,
+	      Real target_EF,
+	      Real EF_tolerance,
+	      Real EF_reserve,
+	      Real dx=10,
 	      Real minimal_layer_thickness=0.0,
 	      Real individualism=0.0,
 	      int merit_power=2,
@@ -127,6 +131,7 @@ protected:
     Real* GDD;
     Real Merit(Coating& coating, Complex* reflectivity=NULL,
 	    Real* _reflectance=NULL, Real* _phase_shift=NULL);
+    Real target_EF, EF_tolerance, EF_reserve, dx;
 };
 
 //-------------------------------------------------------------------------

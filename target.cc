@@ -441,6 +441,10 @@ GDDTarget::GDDTarget(int number_of_frequencies,
 		     AbstractParameter& _reflectance_tolerance,
 		     AbstractParameter& _reflectance_reserve,
 		     int number_of_bounces,
+		     Real target_EF,
+		     Real EF_tolerance,
+		     Real EF_reserve,
+		     Real dx,
 		     Real minimal_layer_thickness,
 		     Real individualism,
 		     int merit_power,
@@ -449,7 +453,9 @@ GDDTarget::GDDTarget(int number_of_frequencies,
 		   number_of_bounces, minimal_layer_thickness, individualism),
     GD_contribution(GD_contribution),
     merit_power(merit_power),
-    adaptive_dispersion(adaptive_dispersion)
+    adaptive_dispersion(adaptive_dispersion),
+    target_EF(target_EF), 
+    EF_tolerance(EF_tolerance), EF_reserve(EF_reserve), dx(dx)
 {
     int i;
     GD = new Real[number_of_frequencies];
@@ -516,9 +522,10 @@ GDDTarget::~GDDTarget()
 Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
        Real* _reflectance, Real* _phase_shift)
 {
-    int i, N;
+    int i, k, N, Nx;
     Real GD_shift, x, reserve, tolerance, omega_step, result;
     Real merit_from_R, merit_from_GD, merit_from_GDD, merit_from_E;
+    Real **Z;
 
     if (!_reflectance) _reflectance = new Real[number_of_frequencies];
     if (!_phase_shift) _phase_shift = new Real[number_of_frequencies];
@@ -571,6 +578,12 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     merit_from_GDD = 0.0;
     merit_from_E = 0.0;
 
+    // discretisation of the stack thickness
+    Nx = int(ceil(coating.StackThickness()/dx));
+    Z = new Real*[Nx];
+    // calculate the E-field intensity distribution and store it in 'Z'
+    coating.EFieldIntensity(N, Nx, dx, Z);
+
     for (i=0; i<N; i++)
     {
 	if (GD_contribution != Real(0))
@@ -600,14 +613,30 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 	    tolerance = reflectance_tolerance[i];
 	    merit_from_R += IntPower((x-reserve)/tolerance, merit_power);
 	}
+	if (target_EF >= Real(0))
+	{
+	    for (k=0; k<Nx; k++)
+	    {
+		x = Z[k][i] - target_EF;
+		reserve = EF_reserve;
+		if (x > reserve && x > 0) {
+		    tolerance = EF_tolerance;
+		    merit_from_E += IntPower((x-EF_reserve)/EF_tolerance, merit_power);
+		}
+	    }
+	}
     }
 //     merit_from_R = sqrt(merit_from_R/N);
 //     merit_from_GD = sqrt(merit_from_GD/N);
 //     merit_from_GDD = sqrt(merit_from_GDD/N);
     // combine the figures of merit into the final result
     result = merit_from_R + merit_from_GD*GD_contribution +
-	merit_from_GDD*(Real(1)-GD_contribution);
-    result = pow(result/(2*N), Real(1)/merit_power);
+	merit_from_GDD*(Real(1)-GD_contribution) + 10*merit_from_E;
+    result = pow(result/(12*N), Real(1)/merit_power);
+
+	for (k=0; k<Nx; k++) delete[] Z[k];
+    delete[] Z;
+
     return result;
 }
 

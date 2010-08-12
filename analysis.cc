@@ -73,6 +73,7 @@ void Analyse(vector<Design>& designs, bool complementary_coatings,
     Real lambda0, omega0;
     Real mean_technological_error, individualism;
     Real omega_step, average, std, GD_contribution;
+    Real target_EF, EF_tolerance, EF_reserve, dx;
     bool sensitivity_required, adaptive_dispersion, pulse_simulation;
     bool verbose, save_transmittance, save_absorption, lossy_materials;
     bool save_phase;
@@ -237,6 +238,12 @@ void Analyse(vector<Design>& designs, bool complementary_coatings,
     {
 	GD_contribution << parameters("GD CONTRIBUTION");
 	merit_power << parameters("MERIT POWER");
+	
+	target_EF << parameters("TARGET EF");
+	EF_tolerance << parameters("EF TOLERANCE");
+	EF_reserve << parameters("EF RESERVE");
+	dx << parameters("STEP");
+
 	target = new GDDTarget(dots_in_plot,
 			       omega_min, omega_max,
 			       variables.TargetDispersion(),
@@ -249,6 +256,10 @@ void Analyse(vector<Design>& designs, bool complementary_coatings,
 			       variables.ReflectanceTolerance(),
 			       variables.ReflectanceReserve(),
 			       no_of_bounces,
+			       target_EF,
+			       EF_tolerance,
+			       EF_reserve,
+			       dx,
 			       Real(-1), // no thickness constraint
 			       individualism,
 			       merit_power,
