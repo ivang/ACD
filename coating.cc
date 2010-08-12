@@ -1409,7 +1409,6 @@ void Coating::FieldAmplitude(Real penetration_depth, Complex* E, Complex* H,
 {
     int i, j, k;
     int n = NumberOfLayers();
-    Real stack_thickness;
 
     if (penetration_depth<Real(0))
     {
@@ -1432,10 +1431,8 @@ void Coating::FieldAmplitude(Real penetration_depth, Complex* E, Complex* H,
 	}
 	return;
     }
-    // calculate the thickness of the stack
-    stack_thickness = 0;
-    for (i=0; i<n; i++) stack_thickness += layers[i].d;
-    if (penetration_depth>stack_thickness)
+    
+    if (penetration_depth>StackThickness())
     {
 	Complex eta;
 	for (j=0; j<N; j++)
