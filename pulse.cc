@@ -457,8 +457,8 @@ Real Pulse::Compare(const SimplePulse& p) const
     if (this == &p) return 0.0;
     if (Nt != p.NumberOfPoints())
 	throw "can't compare pulses of different lengths";
-    if (is_in_time_domain && ! p.IsInTimeDomain() ||
-	! is_in_time_domain && p.IsInTimeDomain() ) // XOR
+    if ((is_in_time_domain && ! p.IsInTimeDomain()) ||
+	(! is_in_time_domain && p.IsInTimeDomain()) ) // XOR
 	throw "the pulses being compared must be in the same domain";
     p.Get(Z);
     for (i=0; i<Nt/2; i++)

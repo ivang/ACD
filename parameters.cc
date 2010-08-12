@@ -710,8 +710,8 @@ AbstractDispersion& Variables::TargetDispersion()
 	    target_dispersion = dispersion;
 	    dispersion->Set(omega0, coefficients);
 	}
-	else if (str[0]=='"' && str[L-1]=='"' ||
-	    str[0]=='\'' && str[L-1]=='\'')
+	else if ((str[0]=='"' && str[L-1]=='"') ||
+	    (str[0]=='\'' && str[L-1]=='\''))
 	{   // read the target dispersion from the file
 	    str = str.substr(1, L-2);
 	    FlexibleDispersion* dispersion = new FlexibleDispersion;
