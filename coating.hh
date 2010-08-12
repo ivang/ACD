@@ -66,6 +66,7 @@ public:
     int NumberOfLayers() const;
     void GetLayerThicknesses(Real* thicknesses) const;
     void SetLayerThicknesses(const Real* thicknesses);
+    Real StackThickness() const; // the sum of all the layer thicknesses
 
     /* Some of the layer thicknesses can be fixed, so that they are not
      optimised. Each coating knows how many layers are subject to

@@ -256,7 +256,7 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
     int i, k, m, N, Nx;
     int n = designs.size();
     bool verbose, save_data;
-    Real x, dx, stack_thickness, lambda_min, lambda_max, threshold;
+    Real dx, lambda_min, lambda_max, threshold;
     Complex *E, *H, *eta;
     Real **Z;
     string str;
@@ -304,8 +304,7 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
     for (m=0; m<n; m++)
     {
 	coating.ImportDesign(designs[m], material_repository);
-	stack_thickness = designs[m].StackThickness();
-	Nx = int(ceil(stack_thickness/dx));
+	Nx = int(ceil(coating.StackThickness()/dx));
 	Z = new Real*[Nx];
 	coating.EFieldIntensity(N, Nx, dx, Z);
 

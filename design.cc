@@ -192,13 +192,6 @@ bool Design::FixedThickness(int layer_index) const
     return fixed_thicknesses[layer_index];
 }
 
-Real Design::StackThickness() const
-{
-    Real stack_thickness = 0;
-    for (int i=0; i<no_of_layers; i++) stack_thickness += thicknesses[i];
-    return stack_thickness;
-}
-
 //-------------------------------------------------------------------------
 
 void RenameDesignsToCWD(vector<Design>& designs)

@@ -779,6 +779,17 @@ void Coating::SetLayerThicknesses(const Real* thicknesses)
 
 //-------------------------------------------------------------------------
 
+Real Coating::StackThickness() const
+{
+    int i, n;
+    Real stack_thickness = 0;
+    n = NumberOfLayers();
+    for (i=0; i<n; i++) stack_thickness += layers[i].d;
+    return stack_thickness;
+}
+
+//-------------------------------------------------------------------------
+
 int Coating::NumberOfVariableLayers() const
 {
     int i, j, n;

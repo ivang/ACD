@@ -32,7 +32,6 @@ public:
     const string& MaterialName(int layer_index) const;
     Real LayerThickness(int layer_index) const;
     bool FixedThickness(int layer_index) const;
-    Real StackThickness() const; // the sum of all the layer thicknesses
 
 private:
     vector<string> material_names;
