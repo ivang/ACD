@@ -497,7 +497,7 @@ of the layer thickness [nm] used to build the initial simplex");
 		   "the data for each material is first searched in the \
 current directory; if it's not found there, it is searched under this path");
     // parameters specific to 'acdinit'
-    p.AddParameter("PARAMETRISATION ORDER", "3",
+    p.AddParameter("PARAMETRISATION ORDER", "8",
 		   "the maximal number of parameters, which specify the \
 thicknesses of layers with either low-or high refractive index");
 }

@@ -581,6 +581,8 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     // discretisation of the stack thickness
     Nx = int(ceil(coating.StackThickness()/dx));
     Z = new Real*[Nx];
+    for (k=0; k<Nx; k++) Z[k] = new Real[N];
+    
     // calculate the E-field intensity distribution and store it in 'Z'
     coating.EFieldIntensity(N, Nx, dx, Z);
 
@@ -613,7 +615,7 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 	    tolerance = reflectance_tolerance[i];
 	    merit_from_R += IntPower((x-reserve)/tolerance, merit_power);
 	}
-	if (target_EF >= Real(0))
+	if (target_EF > Real(0))
 	{
 	    for (k=0; k<Nx; k++)
 	    {
@@ -631,10 +633,10 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 //     merit_from_GDD = sqrt(merit_from_GDD/N);
     // combine the figures of merit into the final result
     result = merit_from_R + merit_from_GD*GD_contribution +
-	merit_from_GDD*(Real(1)-GD_contribution) + 10*merit_from_E;
-    result = pow(result/(12*N), Real(1)/merit_power);
-
-	for (k=0; k<Nx; k++) delete[] Z[k];
+	merit_from_GDD*(Real(1)-GD_contribution) + merit_from_E;
+    result = pow(result/(3*N), Real(1)/merit_power);
+    
+    for (k=0; k<Nx; k++) delete[] Z[k];
     delete[] Z;
 
     return result;
