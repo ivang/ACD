@@ -9,6 +9,8 @@ PATH TO MATERIALS = ./materials/
 # build a set of complementary coatings
 COMPLEMENTARY = no
 
+SAVE DATA = yes
+
 ###########################################################################
 #                            GENERAL PARAMETERS                           #
 ###########################################################################
@@ -63,12 +65,12 @@ TARGET REFLECTANCE = 1.0
 # reflectance by less than this value, then this point doesn't contribute
 # to the merit function at all; the parameter must be either a number or a
 # file name in quotes
-REFLECTANCE RESERVE = 0
+REFLECTANCE RESERVE = 0.01
 
 # a tolerable difference between the target value of the reflectance and
 # the reflectance of the optimised design; the parameter must be either a
 # number or a file name in quotes
-REFLECTANCE TOLERANCE = 0.0001
+REFLECTANCE TOLERANCE = 0.05
 
 # this parameter specifies the target dispersion; it must be either a list
 # of whitespace-separated numbers or a file name in quotes. In the first
@@ -86,29 +88,29 @@ ADAPTIVE DISPERSION = no
 
 # a value between 0 and 1, which determines the weight of the GD against
 # the GDD in the merit function
-GD CONTRIBUTION = 0
+GD CONTRIBUTION = 0.5
 
 # if at some particular wavelength the GD differs from the target GD by
 # less than this value, then this point doesn't contribute to the merit
 # function at all; the parameter must be either a number or a file name in
 # quotes
-GD RESERVE = 0
+GD RESERVE = 10000
 
 # a tolerable average difference between the target and obtained GD [fs];
 # the parameter must be either a number or a file name in quotes
 #GD TOLERANCE = 3.0
-GD TOLERANCE = 300000.0
+GD TOLERANCE = 3000000.0
 
 # if at some particular wavelength the GDD differs from the target GDD by
 # less than this value, then this point doesn't contribute to the merit
 # function at all; the parameter must be either a number or a file name in
 # quotes
-GDD RESERVE = 0
+GDD RESERVE = 100000
 
 # a tolerable average difference between the target and obtained GDD [fs^2];
 # the parameter must be either a number or a file name in quotes
 #GDD TOLERANCE = 20
-GDD TOLERANCE = 200000
+GDD TOLERANCE = 20000000
 
 # the power of the merit function
 MERIT POWER = 2
@@ -219,4 +221,18 @@ PROBE PULSE FWHM =
 # parameter is not initialised, the value of CENTRAL WAVELENGTH will be
 # used
 PULSE CENTRAL WAVELENGTH = 
+
+
+###########################################################################
+#                       Electric Field Optimisation                       #
+###########################################################################
+
+TARGET EF = 0.75
+
+EF RESERVE = 0.01
+
+EF TOLERANCE = 0.05
+
+## Misc.
+PARAMETRISATION ORDER = 4
 
