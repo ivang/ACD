@@ -310,7 +310,7 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 
 	if (save_data)
 	{
-	    str = designs[m].name + "_efi.dat";
+	    str = designs[m].name + ".E.dat";
 	    k = SaveField(Nx, N, dx, lambda_min, lambda_max, Z, str.c_str());
 	    if (verbose && k==0)
 		cout << str << " saved" << endl;
