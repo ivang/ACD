@@ -522,7 +522,7 @@ GDDTarget::~GDDTarget()
 Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
        Real* _reflectance, Real* _phase_shift)
 {
-    int i, k, N, Nx;
+    int i, k, m, N, Nx;
     Real GD_shift, x, reserve, tolerance, omega_step, result;
     Real merit_from_R, merit_from_GD, merit_from_GDD, merit_from_E;
     Real **Z;
@@ -581,8 +581,9 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     // discretisation of the stack thickness
     Nx = int(ceil(coating.StackThickness()/dx));
     Z = new Real*[Nx];
-    for (k=0; k<Nx; k++) Z[k] = new Real[N];
     
+    m = 0;
+
     // calculate the E-field intensity distribution and store it in 'Z'
     coating.EFieldIntensity(N, Nx, dx, Z);
 
@@ -624,14 +625,14 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 		if (x > reserve && x > 0) {
 		    tolerance = EF_tolerance;
 		    merit_from_E += IntPower((x-EF_reserve)/EF_tolerance, merit_power);
+		    m++;
 		}
 	    }
 	}
     }
-//     merit_from_R = sqrt(merit_from_R/N);
-//     merit_from_GD = sqrt(merit_from_GD/N);
-//     merit_from_GDD = sqrt(merit_from_GDD/N);
-    // combine the figures of merit into the final result
+    
+    if (m > 0) merit_from_E /= m / Nx;
+    
     result = merit_from_R + merit_from_GD*GD_contribution +
 	merit_from_GDD*(Real(1)-GD_contribution) + merit_from_E;
     result = pow(result/(3*N), Real(1)/merit_power);
