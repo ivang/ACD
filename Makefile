@@ -1,4 +1,3 @@
-
 # The parameter SINGLE_PRECISION makes the code use 'float' instead of
 # 'double'.
 # The parameter DEBUG enables some additional self-checks of the code.
@@ -8,8 +7,8 @@
 .PHONY: all clean cleanall install uninstall TAGS
 
 CC = g++
-CPPFLAGS = -ggdb -Ioptimisation # -DMS_WINDOWS # -DSINGLE_PRECISION # -DDEBUG
-CXXFLAGS = -Wall #-O2
+CPPFLAGS = #-ggdb -pg -DDEBUG # -DMS_WINDOWS # -DSINGLE_PRECISION -DDEBUG
+CXXFLAGS = -Wall  -O2
 LDFLAGS = -L.  # -static -static-libgcc
 OBJS1 := coating.o design.o interpolation.o material.o dispersion.o \
         parameters.o reader.o
@@ -65,9 +64,9 @@ TAGS:
 	$(TAGGER) *.hh *.cc
 
 clean:
-	rm -f *.o *~ TAGS tags
+	rm -f *.o *~
 
 cleanall:
-	rm -f *.o *~ TAGS tags  $(executables)
+	rm -f *.o *~ TAGS tags $(executables)
 
 
