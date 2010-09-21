@@ -481,6 +481,9 @@ Coating::Coating()
     exit_medium_index = 0;
     B = NULL;
     C = NULL;
+    E_0 = NULL;
+    H_0 = NULL;
+    eta_0 = NULL;
     temporary_thicknesses = NULL;
 }
 
@@ -490,7 +493,7 @@ void Coating::ChangeNumberOfFrequencies(int new_N)
 {
     int i;
     if (N==new_N) return;
-    if (N > 0)
+    if (new_N == 0 || N > 0)
     {
 	for (i=0; i<number_of_materials; i++)
 	{
@@ -501,6 +504,9 @@ void Coating::ChangeNumberOfFrequencies(int new_N)
 	}
 	delete[] B;
 	delete[] C;
+	delete[] E_0;
+	delete[] H_0;
+	delete[] eta_0;
 	for (i=0; i<NumberOfLayers(); i++)
 	{
 	    layers[i].DeallocateMemory();
@@ -524,6 +530,9 @@ void Coating::ChangeNumberOfFrequencies(int new_N)
 	    layers[i].N = N;
 	    layers[i].AllocateMemory();
 	}
+	E_0 = new Complex[N];
+	H_0 = new Complex[N];
+	eta_0 = new Complex[N];
     }
 }
 
@@ -562,6 +571,9 @@ void Coating::Copy(const Coating& coating)
     exit_medium_index = coating.exit_medium_index;
     material_index = coating.material_index;
     material_map = coating.material_map;
+	
+    // calculate the incident electric field
+    FieldAmplitude(-1, E_0, H_0, eta_0);
 }
 
 //-------------------------------------------------------------------------
@@ -651,6 +663,8 @@ void Coating::SetParameters(const Parameters& parameters,
 	RefreshLayers();
 	// calculate the tangential magnetic and electric fields
 	Calculate_B_and_C();
+	// calculate the incident electric field
+	//FieldAmplitude(-1, E_0, H_0, eta_0);
     }
 }
 
@@ -712,6 +726,8 @@ void Coating::ImportDesign(const Design& design,
     RefreshLayers();
     // calculate the tangential magnetic and electric fields
     Calculate_B_and_C();
+    // calculate the incident electric field
+    FieldAmplitude(-1, E_0, H_0, eta_0);
 }
 
 //-------------------------------------------------------------------------
@@ -775,6 +791,8 @@ void Coating::SetLayerThicknesses(const Real* thicknesses)
     for (i=0; i<n; i++) layers[i].d = abs(thicknesses[i]);
     // calculate the tangential magnetic and electric fields
     Calculate_B_and_C();
+    // calculate the incident electric field
+    FieldAmplitude(-1, E_0, H_0, eta_0);
 }
 
 //-------------------------------------------------------------------------
@@ -1078,6 +1096,7 @@ of the same materials";
 	for (j=i; j>=0; j--) layers[j].UpdateR(layers[j+1]);
     }
     Calculate_B_and_C();
+    FieldAmplitude(-1, E_0, H_0, eta_0);
 }
 
 //-------------------------------------------------------------------------
@@ -1475,12 +1494,9 @@ void Coating::EFieldIntensity(const int N, const int Nx,
     //normalise the intensity to the intensity of the incident light
     if (normalise)
     {
-	FieldAmplitude(-1, E, H, eta);
 	for (i=0; i<N; i++)
 	    for (k=0; k<Nx; k++)
-	    {
-		Z[k][i] /= norm(E[i] + H[i]/eta[i])/4;
-	    }
+		Z[k][i] /= norm(E_0[i] + H_0[i]/eta_0[i])/4;
     }
 
     delete[] E;

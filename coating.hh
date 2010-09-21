@@ -150,6 +150,11 @@ private:
     Real* temporary_thicknesses;
     vector<Layer> layers;
 
+    // Electromagnetic field of incident light
+    Complex* E_0;
+    Complex* H_0;
+    Complex* eta_0;
+
     // eta = n * cos(theta) for the TE wave (s-polarisation),
     //	     n / cos(theta) for the TM wave (p-polarisation);
     // 'eta' is a function of frequency
