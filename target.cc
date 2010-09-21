@@ -1,6 +1,11 @@
 #include "target.hh"
 #include <cmath>
 
+/*
+#include <boost/math/distributions/normal.hpp> // for normal_distribution
+  using boost::math::normal;
+*/
+
 //-------------------------------------------------------------------------
 
 AbstractTarget::AbstractTarget(int number_of_frequencies,
@@ -458,6 +463,11 @@ GDDTarget::GDDTarget(int number_of_frequencies,
     EF_tolerance(EF_tolerance), EF_reserve(EF_reserve), dx(dx)
 {
     int i;
+    // leftover after an experiment with a gaussian spectrum
+    //const Real FWHM = wavelengths[0] - wavelengths[number_of_frequencies-1];
+    //const Real mean = FWHM / Real(2) + wavelengths[number_of_frequencies-1];
+    //const Real sigma = FWHM / 10.35482;
+    //normal gaussian(mean, sigma); // initializing the Gaussian distribution
     GD = new Real[number_of_frequencies];
     GDD = new Real[number_of_frequencies];
     target_GD = new Real[number_of_frequencies];
@@ -471,6 +481,8 @@ GDDTarget::GDDTarget(int number_of_frequencies,
     reflectance_reserve = new Real[number_of_frequencies];
     adapted_target_GD = new Real[number_of_frequencies];
     adapted_target_GDD = new Real[number_of_frequencies];
+    //spectrum = new Real[number_of_frequencies]; // from the leftover 
+    						  // mentioned above
     for (i=0; i<number_of_frequencies; i++)
     {
 	target_GD[i] = target_dispersion.GD(frequencies[i]);
@@ -482,6 +494,7 @@ GDDTarget::GDDTarget(int number_of_frequencies,
 	GDD_reserve[i] = _GDD_reserve(wavelengths[i]);
 	reflectance_tolerance[i] = _reflectance_tolerance(wavelengths[i]);
 	reflectance_reserve[i] = _reflectance_reserve(wavelengths[i]);
+	//spectrum[i] = pdf(gaussian, wavelengths[i]);    // same leftover
 	if (GD_tolerance[i]<=Real(0) || GDD_tolerance[i]<=Real(0) ||
 	    reflectance_tolerance[i]<=Real(0))
 	{
@@ -515,6 +528,7 @@ GDDTarget::~GDDTarget()
     delete[] reflectance_reserve;
     delete[] adapted_target_GD;
     delete[] adapted_target_GDD;
+    //delete[] spectrum;	// see the leftover above
 }
 
 //-------------------------------------------------------------------------
@@ -522,25 +536,37 @@ GDDTarget::~GDDTarget()
 Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
        Real* _reflectance, Real* _phase_shift)
 {
-    int i, k, m, N, Nx;
+    int i, k, N, Nx;
     Real GD_shift, x, reserve, tolerance, omega_step, result;
     Real merit_from_R, merit_from_GD, merit_from_GDD, merit_from_E;
     Real **Z;
+    bool allocated_vity = false, allocated_ance = false,
+	 allocated_shift = false;
+    int Nmid;
 
-    if (!_reflectance) _reflectance = new Real[number_of_frequencies];
-    if (!_phase_shift) _phase_shift = new Real[number_of_frequencies];
-    
-    if (!reflectivity) {
-	reflectivity = new Complex[number_of_frequencies];
-	coating.Reflectivity(reflectivity);
+
+    if (!reflectivity) 
+    {
+       reflectivity = new Complex[number_of_frequencies];
+       coating.Reflectivity(reflectivity);
+       allocated_vity = true;
+    }
+    if (!_reflectance) 
+    { 
+	_reflectance = new Real[number_of_frequencies];
+	Reflectance(number_of_frequencies, reflectivity, _reflectance);
+	allocated_ance = true;
+    }
+    if (!_phase_shift) 
+    {
+	_phase_shift = new Real[number_of_frequencies];
+	PhaseShift(number_of_frequencies, reflectivity, _phase_shift);
+	allocated_shift = true;
     }
     
-    Reflectance(number_of_frequencies, reflectivity, _reflectance);
-    PhaseShift(number_of_frequencies, reflectivity, _phase_shift);
-
     N = number_of_frequencies;
     omega_step = (frequencies[N-1] - frequencies[0]) / Real(N-1);
-    PhaseToGD(N, omega_step, _phase_shift, GD);
+/*    PhaseToGD(N, omega_step, _phase_shift, GD);
     PhaseToGDD(N, omega_step, _phase_shift, GDD);
     
     // maybe we make more than one bounce
@@ -571,7 +597,8 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     // calculated GD in order to make it as close to the target GD
     // as possible
     GD_shift = GDShift(N, adapted_target_GD, GD_reserve, GD_tolerance, GD);
-
+*/
+    
     // analyse the properties
     merit_from_R = 0.0;
     merit_from_GD = 0.0;
@@ -580,16 +607,16 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 
     // discretisation of the stack thickness
     Nx = int(ceil(coating.StackThickness()/dx));
+    Nmid = int(floor(N/2));
     Z = new Real*[Nx];
     
-    m = 0;
-
     // calculate the E-field intensity distribution and store it in 'Z'
     coating.EFieldIntensity(N, Nx, dx, Z);
 
+
     for (i=0; i<N; i++)
     {
-	if (GD_contribution != Real(0))
+/*	if (GD_contribution != Real(0))
 	{
 	    x = abs(GD[i] + GD_shift - adapted_target_GD[i]);
 	    reserve = GD_reserve[i];
@@ -609,36 +636,54 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 		merit_from_GDD += IntPower((x-reserve)/tolerance, merit_power);
 	    }
 	}
+*/
 	x = abs(_reflectance[i] - target_reflectance[i]);
 	reserve = reflectance_reserve[i];
 	if (x > reserve)
 	{
-	    tolerance = reflectance_tolerance[i];
+	    tolerance = reflectance_tolerance[i]*N;
 	    merit_from_R += IntPower((x-reserve)/tolerance, merit_power);
 	}
-	if (target_EF > Real(0))
+/* 	if (target_EF > Real(0)) 
+ 	{ 
+ 	    for (k=0; k<Nx; k++) 
+ 	    { 
+ 		x = Z[k][i] - target_EF; 
+ 		reserve = EF_reserve; 
+ 		if (x > reserve && x > 0)  
+ 		{ 
+ 		    tolerance = EF_tolerance; 
+ 		    merit_from_E += IntPower((x - EF_reserve)*100*spectrum[i] / 
+ 			    (Nx*EF_tolerance), merit_power); 
+ 		} 
+ 	    } 
+ 	} 
+*/
+    }
+    
+    if (target_EF > Real(0))
+    {
+	for (k=0; k<Nx; k++)
 	{
-	    for (k=0; k<Nx; k++)
+	    x = Z[k][Nmid] - target_EF;
+	    reserve = EF_reserve;
+	    if (x > reserve && x > 0) 
 	    {
-		x = Z[k][i] - target_EF;
-		reserve = EF_reserve;
-		if (x > reserve && x > 0) {
-		    tolerance = EF_tolerance;
-		    merit_from_E += IntPower((x-EF_reserve)/EF_tolerance, merit_power);
-		    m++;
-		}
+		tolerance = EF_tolerance * Nx;
+		merit_from_E += IntPower((x - reserve) / tolerance, merit_power);
 	    }
 	}
     }
-    
-    if (m > 0) merit_from_E /= m / Nx;
-    
-    result = merit_from_R + merit_from_GD*GD_contribution +
-	merit_from_GDD*(Real(1)-GD_contribution) + merit_from_E;
-    result = pow(result/(3*N), Real(1)/merit_power);
+    result = merit_from_R + merit_from_E;
+//    merit_from_GD*GD_contribution + merit_from_GDD*(Real(1)-GD_contribution);
+    result = pow(result, Real(1)/merit_power);
     
     for (k=0; k<Nx; k++) delete[] Z[k];
     delete[] Z;
+
+    if (allocated_ance)  delete[] _reflectance;
+    if (allocated_shift) delete[] _phase_shift;
+    if (allocated_vity)  delete[] reflectivity;
 
     return result;
 }
@@ -754,13 +799,18 @@ Real PulseTarget::Merit(Coating& coating, Complex* reflectivity,
     Real I_max;
     int i1 = (N_pulse-number_of_frequencies)/2;
 
-    if (!_reflectance) _reflectance = new Real[number_of_frequencies];
-    if (!_phase_shift) _phase_shift = new Real[number_of_frequencies];
-    
     if (!reflectivity) coating.Reflectivity(reflectivity);
 
-    Reflectance(number_of_frequencies, reflectivity, _reflectance);
-    PhaseShift(number_of_frequencies, reflectivity, _phase_shift);
+    if (!_reflectance) 
+    { 
+	_reflectance = new Real[number_of_frequencies];
+	Reflectance(number_of_frequencies, reflectivity, _reflectance);
+    }
+    if (!_phase_shift) 
+    {
+	_phase_shift = new Real[number_of_frequencies];
+	PhaseShift(number_of_frequencies, reflectivity, _phase_shift);
+    }
     
     for (i=0; i<i1; i++) reflected_pulse[i] = 0;
     for (j=0; j<number_of_frequencies; j++)
@@ -796,6 +846,10 @@ Real PulseTarget::Merit(Coating& coating, Complex* reflectivity,
     pulse->Set(reflected_pulse);
     pulse->ToTimeDomain();
     I_max = pulse->PeakIntensity();
+
+    delete[] _reflectance;
+    delete[] _phase_shift;
+
     return 1.0-I_max;
 }
 
