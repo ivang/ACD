@@ -240,7 +240,7 @@ You must give one or more names of design files on the command line."
 	cout << "paths_to_materials:\n";
 	for (i=0; i<paths_to_materials.size(); i++)
 	    cout << "\t" << paths_to_materials[i] << endl;
-	exit(0);
+	//exit(0);
 #endif
 
 	// create a vector of designs
