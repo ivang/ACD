@@ -1,0 +1,94 @@
+#!/usr/bin/gnuplot
+
+# This is a Gnuplot script, which plots a standard analysis of a design
+# named 'design1'
+
+#set term postscript color 'Helvetica' 24 
+set grid
+#set timestamp
+#set output 'plots.ps'
+
+set term pngcairo font 'Gill-Sans,16' size 1024, 768
+
+set output 'design1.R.png'
+set title 'Reflectance'
+set xlabel 'Wavelength [nm]'
+set ylabel '%'
+#set nokey
+plot 'design1.R.dat' with lines linetype 1 linewidth 3 title 'Optimised', \
+	'initial.R.dat' with lines linetype 1 linewidth 3 lc rgb 'blue' title 'Initial'
+#     'design1.R.dat' every 3 with errorbars linetype 1 linewidth 1
+
+set output 'design1.max.png'
+set title 'Crossection along the max. intensity'
+set yrange [0:*]
+set xlabel 'Wavelength [nm]'
+set ylabel 'Intensity [arb. u.]'
+#set nokey
+plot 'design1.max.dat' with lines linetype 1 linewidth 3 title 'Optimised', \
+	'initial.max.dat' with lines linetype 1 linewidth 3 lc rgb 'blue' title 'Initial'
+
+set output 'design1.E.png'
+set title "Nb2O5/SiO2 High Reflector (30 layers)" 
+set xlabel "Penetration depth [nm]" 
+set ylabel "Wavelength [nm]" 
+set label 3 "Intensity [arb. u.]" at graph -0.16,0.0,0.20 rotate by 90 
+set label 1 "Substrate" at graph 1.01,0,0.0
+set label 2 "Incidence\nmedium" at graph -0.26,0,-0.27
+set xtics offset graph 0.0,-0.03
+set ytics offset graph 0.03,0.0
+set xrange [*:*]
+set yrange [*:*]
+set nokey
+#f(x,y) = 0.55
+splot "design1.E.dat" with pm3d at s #title "Nb2O5/SiO2"
+
+set output 'initial.E.png'
+set title "Nb2O5/SiO2 High Reflector (30 layers)" 
+set xlabel "Penetration depth [nm]" 
+set ylabel "Wavelength [nm]" 
+set label 3 "Intensity [arb. u.]" at graph -0.16,0.0,0.20 rotate by 90 
+set label 1 "Substrate" at graph 1.0,0,0.0
+set label 2 "Incidence\nmedium" at graph -0.22,0,-0.2
+set xtics offset graph 0.0,-0.03
+set ytics offset graph 0.03,0.0
+set xrange [*:*]
+set yrange [*:*]
+set nokey
+#f(x,y) = 0.55
+splot "initial.E.dat" with pm3d at s #title "Nb2O5/SiO2"
+
+#set title 'Group Delay Dispersion (GDD)'
+#set xlabel 'wavelength, nm'
+#set ylabel 'fs^2'
+#set nokey
+#plot 'design1.GDD.dat' with lines linetype 1 linewidth 3, \
+#     'design1.GDD.dat' every 3 with errorbars linetype 1 linewidth 1
+
+#set title 'Group Delay (GD)'
+#set xlabel 'wavelength, nm'
+#set ylabel 'fs'
+#set nokey
+#plot 'design1.GD.dat' with lines linetype 1 linewidth 3, \
+#     'design1.GD.dat' every 3 with errorbars linetype 1 linewidth 1
+
+#set title 'Uncompensated Group Delay'
+#set xlabel 'wavelength, nm'
+#set ylabel 'fs'
+#set nokey
+#plot 'design1.uGD.dat' with lines linetype 1 linewidth 3, \
+#     'design1.uGD.dat' every 3 with errorbars linetype 1 linewidth 1
+ 
+#set title 'Simulation of Pulse Reflection'
+#set xlabel 'time, fs'
+#set ylabel 'intensity, arb. units'
+#set key
+#plot 'design1.I.dat' title 'reflected' with lines linetype 1 linewidth 3, \
+     #'design1.I.dat' every 10 title '' with errorbars linetype 1 linewidth 1, \
+     #'probe_pulse.dat' title 'probe' with lines linetype 3 linewidth 2
+#
+#set title 'Spectrum of the Probe Pulse'
+#set xlabel 'wavelength, nm'
+#set ylabel 'arb. units'
+#set nokey
+#plot 'probe_spectrum.dat' with lines linewidth 3
