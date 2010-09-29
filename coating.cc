@@ -1494,8 +1494,8 @@ void Coating::EFieldIntensity(const int N, const int Nx,
     //normalise the intensity to the intensity of the incident light
     if (normalise)
     {
-	for (i=0; i<N; i++)
-	    for (k=0; k<Nx; k++)
+	for (k=0; k<Nx; k++)
+	    for (i=0; i<N; i++)
 		Z[k][i] /= norm(E_0[i] + H_0[i]/eta_0[i])/4;
     }
 
