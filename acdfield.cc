@@ -30,8 +30,8 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 	     MaterialRepository& material_repository);
 
 int SaveField(const int Nx, const int Ny, const Real dx, 
-	const Real lambda_min, const Real lambda_max, 
-	Real** Z, const char* file_name);
+	const Real lambda_min, const Real lambda_max, Real** Z, 
+	const char* file_name, const char* integrated_filename);
 /* returns 0 if the data have been successfully saved */
 
 int Visualise(const int Nx, const int Ny, Real** Z,
@@ -259,7 +259,7 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
     Real dx, lambda_min, lambda_max, threshold;
     Complex *E, *H, *eta;
     Real **Z;
-    string str;
+    string str, stri;
 
     // initialise the coating
     Coating coating;
@@ -311,9 +311,14 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 	if (save_data)
 	{
 	    str = designs[m].name + ".E.dat";
-	    k = SaveField(Nx, N, dx, lambda_min, lambda_max, Z, str.c_str());
+	    stri = designs[m].name + ".integrated.E.dat";
+	    k = SaveField(Nx, N, dx, lambda_min, lambda_max, Z, 
+		    str.c_str(), stri.c_str());
 	    if (verbose && k==0)
-		cout << str << " saved" << endl;
+	    {
+		cout << str  << " saved" << endl;
+		cout << stri << " saved" << endl;
+	    }
 	}
 	str = designs[m].name + "_efi.ppm";
 	k = Visualise(Nx, N, Z, str.c_str(), threshold);
@@ -331,28 +336,42 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
 //-------------------------------------------------------------------------
 
 int SaveField(const int Nx, const int Ny, const Real dx, 
-	const Real lambda_min, const Real lambda_max, 
-	Real** Z, const char* file_name)
+	const Real lambda_min, const Real lambda_max, Real** Z, 
+	const char* file_name, const char* integrated_filename)
 {
     int i, j;
-    FILE* file = fopen(file_name, "w");
+    Real intensity;
     const Real dlambda = (lambda_max - lambda_min)/Ny;
+    
+    FILE* file = fopen(file_name, "w");
+    // file to store the intensity integrated over wavelengths
+    FILE* integrated = fopen(integrated_filename, "w");
 
     if (! file)
     {
 	cerr << "FAILED to open " << file_name << endl;
 	return -1;
     }
+    if (! integrated)
+    {
+	cerr << "FAILED to open " << integrated_filename << endl;
+	return -1;
+    }
+
     for (i=0; i<Nx; i++)
     {
+	intensity = 0;
 	for (j=0; j<Ny; j++) 
 	{
 	    fprintf(file, "%5.1f %5.1f %.4e\n",
 		    i * dx, lambda_min + j * dlambda, Z[i][j]);
+	    intensity += Z[i][j];
 	}
 	fprintf(file, "\n");
+	fprintf(integrated, "%5.1f %.4e\n", i * dx, intensity/Ny);
     }
     fclose(file);
+    fclose(integrated);
     return 0;
 }
 
