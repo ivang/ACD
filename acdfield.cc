@@ -305,7 +305,10 @@ void Analyse(vector<Design>& designs, Parameters& parameters,
     {
 	coating.ImportDesign(designs[m], material_repository);
 	Nx = int(ceil(coating.StackThickness()/dx));
+
 	Z = new Real*[Nx];
+	for (i=0; i<Nx; i++) Z[i] = new Real[N];
+	
 	coating.EFieldIntensity(N, Nx, dx, Z);
 
 	if (save_data)

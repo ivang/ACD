@@ -1485,7 +1485,6 @@ void Coating::EFieldIntensity(const int N, const int Nx,
     
     for (k=0,x=0; k<Nx; k++,x+=dx)
     {
-	Z[k] = new Real[N];
 	FieldAmplitude(x, E, H);
 	for (i=0; i<N; i++)
 	    Z[k][i] = norm(E[i]);

@@ -539,6 +539,7 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     int i, k, N, Nx;
     Real GD_shift, x, reserve, tolerance, omega_step, result;
     Real merit_from_R, merit_from_GD, merit_from_GDD, merit_from_E;
+//    Real probe_thickness;
     Real **Z;
     bool allocated_vity = false, allocated_ance = false,
 	 allocated_shift = false;
@@ -566,7 +567,7 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     
     N = number_of_frequencies;
     omega_step = (frequencies[N-1] - frequencies[0]) / Real(N-1);
-/*    PhaseToGD(N, omega_step, _phase_shift, GD);
+    PhaseToGD(N, omega_step, _phase_shift, GD);
     PhaseToGDD(N, omega_step, _phase_shift, GDD);
     
     // maybe we make more than one bounce
@@ -597,7 +598,7 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     // calculated GD in order to make it as close to the target GD
     // as possible
     GD_shift = GDShift(N, adapted_target_GD, GD_reserve, GD_tolerance, GD);
-*/
+
     
     // analyse the properties
     merit_from_R = 0.0;
@@ -605,18 +606,27 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
     merit_from_GDD = 0.0;
     merit_from_E = 0.0;
 
-    // discretisation of the stack thickness
+/*  probe_thickness = coating.StackThickness();
+   
+    // we do not want to measure the merit function deeper than probe_limit
+    if (probe_thickness > probe_limit) probe_thickness = probe_limit;
+    
+    // discretisation of the stack thickness */
     Nx = int(ceil(coating.StackThickness()/dx));
     Nmid = int(floor(N/2));
-    Z = new Real*[Nx];
     
     // calculate the E-field intensity distribution and store it in 'Z'
-    coating.EFieldIntensity(N, Nx, dx, Z);
-
+    if (target_EF >= Real(0)) 
+    {
+	Z = new Real*[Nx];
+	for (i=0; i<Nx; i++) Z[i] = new Real[N];
+	
+	coating.EFieldIntensity(N, Nx, dx, Z);
+    }
 
     for (i=0; i<N; i++)
     {
-/*	if (GD_contribution != Real(0))
+	if (GD_contribution != Real(0))
 	{
 	    x = abs(GD[i] + GD_shift - adapted_target_GD[i]);
 	    reserve = GD_reserve[i];
@@ -636,12 +646,12 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 		merit_from_GDD += IntPower((x-reserve)/tolerance, merit_power);
 	    }
 	}
-*/
+
 	x = abs(_reflectance[i] - target_reflectance[i]);
 	reserve = reflectance_reserve[i];
 	if (x > reserve)
 	{
-	    tolerance = reflectance_tolerance[i]*N;
+	    tolerance = reflectance_tolerance[i];
 	    merit_from_R += IntPower((x-reserve)/tolerance, merit_power);
 	}
 /* 	if (target_EF > Real(0)) 
@@ -661,26 +671,31 @@ Real GDDTarget::Merit(Coating& coating, Complex* reflectivity,
 */
     }
     
-    if (target_EF > Real(0))
+    if (target_EF >= Real(0))
     {
 	for (k=0; k<Nx; k++)
 	{
-	    x = Z[k][Nmid] - target_EF;
+	    x = 0;
+	    for (i=0; i<N; i++)
+		x += Z[k][i];
+
+	    x = (x / N) - target_EF;
 	    reserve = EF_reserve;
 	    if (x > reserve && x > 0) 
 	    {
-		tolerance = EF_tolerance * Nx;
+		tolerance = EF_tolerance;
 		merit_from_E += IntPower((x - reserve) / tolerance, merit_power);
 	    }
 	}
     }
-    result = merit_from_R + merit_from_E;
-//    merit_from_GD*GD_contribution + merit_from_GDD*(Real(1)-GD_contribution);
+    result = merit_from_R + merit_from_E + merit_from_GD*GD_contribution + merit_from_GDD*(Real(1)-GD_contribution);
     result = pow(result, Real(1)/merit_power);
     
-    for (k=0; k<Nx; k++) delete[] Z[k];
-    delete[] Z;
-
+    if (target_EF >= Real(0))
+    {
+	for (k=0; k<Nx; k++) delete[] Z[k];
+	delete[] Z;
+    }
     if (allocated_ance)  delete[] _reflectance;
     if (allocated_shift) delete[] _phase_shift;
     if (allocated_vity)  delete[] reflectivity;
